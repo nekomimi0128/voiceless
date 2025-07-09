@@ -156,10 +156,29 @@
         };
 
         // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        const analytics = getAnalytics(app); // Analyticsを使用しない場合は削除可能
+        let app;
+        let db;
+        let auth;
+        let analytics; // Analyticsを使用しない場合は削除可能
+
+        try {
+            console.log('Firebaseアプリを初期化中...');
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            analytics = getAnalytics(app); // Analyticsを使用しない場合は削除可能
+            console.log('Firebaseアプリの初期化が完了しました。');
+        } catch (error) {
+            console.error('Firebaseアプリの初期化に失敗しました:', error);
+            document.getElementById('loading-overlay').innerHTML = `
+                <p class="text-red-600 text-lg">エラー: アプリの初期化に失敗しました。</p>
+                <p class="text-red-500 text-sm mt-2">詳細: ${error.message}</p>
+                <p class="mt-4 text-gray-700">ページをリロードしてください。</p>
+            `;
+            // Stop further execution if Firebase initialization fails
+            throw new Error("Firebase initialization failed.");
+        }
+
 
         // Firestoreのパスで使用するApp ID（projectIdを使用）
         const appId = firebaseConfig.projectId;
@@ -185,7 +204,7 @@
         const customModal = document.getElementById('custom-modal');
         const modalMessage = document.getElementById('modal-message');
         const modalOkButton = document.getElementById('modal-ok-button');
-        const modalCancelButton = document.getElementById('modal-cancel-button');
+        const modalCancelButton = document = document.getElementById('modal-cancel-button');
 
         // Loading overlay element
         const loadingOverlay = document.getElementById('loading-overlay'); // Get reference to the new overlay
@@ -236,7 +255,9 @@
         });
 
         // Firebase認証状態の監視
+        console.log('onAuthStateChangedリスナーを設定中...');
         onAuthStateChanged(auth, async (user) => {
+            console.log('onAuthStateChangedがトリガーされました。');
             loadingOverlay.classList.add('hidden'); // Hide loading overlay once auth state is known
 
             if (user) {
@@ -244,7 +265,7 @@
                 console.log('Firebase認証済み:', userId);
                 introSection.classList.remove('hidden'); // Show intro section after auth
             } else {
-                console.log('Firebase認証なし、匿名認証を試行');
+                console.log('Firebase認証なし、匿名認証を試行中...');
                 try {
                     const userCredential = await signInAnonymously(auth);
                     userId = userCredential.user.uid;
@@ -258,6 +279,8 @@
                 }
             }
         });
+        console.log('onAuthStateChangedリスナーの設定が完了しました。');
+
 
         /**
          * チャットセッションを初期化または再開します。
