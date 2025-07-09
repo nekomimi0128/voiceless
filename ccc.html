@@ -3,687 +3,392 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>声なき声 - カウンセラー間相談ルーム</title>
+    <title>今日の復習メモ</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Inter Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f0f4f8;
+            background-color: #f0f2f5;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
         }
-        .message-self { /* Changed from chat-message-self */
-            background-color: #e0f2f7; /* 自分のメッセージ背景色 */
-            border-bottom-left-radius: 0.75rem;
-            border-top-left-radius: 0.75rem;
-            border-top-right-radius: 0.75rem;
-        }
-        .message-other { /* Changed from chat-message-other */
-            background-color: #d1e7dd; /* 相手のメッセージ背景色 */
-            border-bottom-right-radius: 0.75rem;
-            border-top-left-radius: 0.75rem;
-            border-top-right-radius: 0.75rem;
-        }
-        /* Scrollbar styles */
-        .custom-scrollbar::-webkit-scrollbar {
+        /* Custom scrollbar for messages div */
+        #messages::-webkit-scrollbar {
             width: 8px;
         }
-        .custom-scrollbar::-webkit-scrollbar-track {
+        #messages::-webkit-scrollbar-track {
             background: #f1f1f1;
             border-radius: 10px;
         }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
+        #messages::-webkit-scrollbar-thumb {
             background: #888;
             border-radius: 10px;
         }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        #messages::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
+
+        /* Fade-in animation for messages */
+        .message-enter {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        .message-enter-active {
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+        }
+
+        /* Fake screen styling - REMOVED */
+        /* #fake-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #e0e0e0;
+            color: #555;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            flex-direction: column;
+            z-index: 1000;
+            text-align: center;
+        }
+        #fake-screen.active {
+            display: flex;
+        } */
     </style>
 </head>
-<body class="flex flex-col min-h-screen">
-    <div class="flex-grow flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-5xl border border-gray-200">
-            <h1 class="text-3xl font-extrabold text-blue-700 mb-6 text-center">カウンセラー間相談ルーム</h1>
+<body>
+    <div id="app-container" class="bg-white p-6 md:p-8 rounded-lg shadow-xl w-full max-w-md mx-4 sm:mx-auto border border-gray-200">
+        <h1 class="text-2xl md:text-3xl font-bold text-center mb-4 text-blue-700">今日の復習メモ</h1>
+        <p class="text-sm text-gray-600 text-center mb-6">※ このツールは学習内容の振り返りや疑問点の共有にご利用ください。</p>
 
-            <!-- Login section -->
-            <div id="login-section" class="text-center p-6 bg-gray-50 rounded-xl shadow-inner">
-                <p class="text-gray-700 text-lg mb-4">カウンセラーアカウントでログインしてください。</p>
-                <input type="email" id="email-input" placeholder="メールアドレス"
-                       class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-full max-w-xs mb-3">
-                <input type="password" id="password-input" placeholder="パスワード"
-                       class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-full max-w-xs mb-4">
-                <button id="login-button"
-                        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition duration-300 ease-in-out transform hover:scale-105">
-                    ログイン
+        <div id="loading-indicator" class="text-center text-gray-500 mb-4" style="display: none;">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+            <p>読み込み中...</p>
+        </div>
+
+        <div id="user-info" class="text-sm text-gray-500 mb-4 hidden">
+            あなたのID: <span id="user-id-display" class="font-mono text-blue-600 break-all"></span>
+        </div>
+
+        <!-- Nickname setting section -->
+        <div class="mb-4 p-3 border border-gray-200 rounded-md bg-gray-50">
+            <label for="nicknameInput" class="block text-sm font-medium text-gray-700 mb-2">あなたのニックネーム:</label>
+            <div class="flex gap-2">
+                <input type="text" id="nicknameInput" placeholder="ニックネームを入力"
+                       class="flex-grow p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-400 text-sm">
+                <button id="setNicknameBtn"
+                        class="px-3 py-2 bg-green-500 text-white font-semibold rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 transition-colors duration-200 shadow-sm text-sm">
+                    設定
                 </button>
-                <p id="login-error" class="text-red-500 mt-2 hidden">メールアドレスまたはパスワードが間違っています。</p>
             </div>
+            <p id="currentNicknameDisplay" class="text-xs text-gray-500 mt-2">現在のニックネーム: <span class="font-bold text-gray-700"></span></p>
+        </div>
 
-            <!-- Dashboard -->
-            <div id="chat-dashboard" class="hidden">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-semibold text-gray-800">相談リスト</h2>
-                    <div class="flex space-x-2">
-                        <button id="new-group-consultation-button" <!-- Changed ID -->
-                                class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-xl shadow-md transition duration-300 ease-in-out">
-                            新しいグループ相談
-                        </button>
-                        <button id="logout-button"
-                                class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-xl shadow-md transition duration-300 ease-in-out">
-                            ログアウト
-                        </button>
-                    </div>
-                </div>
+        <div id="messages" class="border border-gray-300 p-4 h-96 overflow-y-auto mb-4 rounded-md bg-gray-50 scroll-smooth">
+            <!-- Messages will be displayed here -->
+        </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- Counselor/Consultation List -->
-                    <div class="col-span-1 bg-gray-50 rounded-xl p-4 shadow-inner border border-gray-200 h-[600px] overflow-y-auto custom-scrollbar">
-                        <ul id="counselor-list" class="space-y-3">
-                            <!-- Counselors and Group Consultations will be displayed here -->
-                            <li id="no-counselors-message" class="text-gray-500 text-center py-4">相談相手がいません。</li>
-                        </ul>
-                    </div>
+        <div class="flex justify-end mb-4">
+            <button id="clearChatBtn" class="px-4 py-2 bg-red-500 text-white font-semibold rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 transition-colors duration-200 shadow-md text-sm">
+                チャットをクリア
+            </button>
+        </div>
 
-                    <!-- Consultation Area -->
-                    <div class="col-span-2 flex flex-col bg-gray-50 rounded-xl p-4 shadow-inner border border-gray-200 h-[600px]">
-                        <div id="selected-counselor-info" class="text-center text-gray-600 text-md mb-4 p-2 bg-blue-50 rounded-xl hidden">
-                            <p>相談相手: <span id="current-consultation-partner-name" class="font-bold"></span></p> <!-- Changed ID -->
-                        </div>
-                        <div id="consultation-messages" class="flex-grow overflow-y-auto custom-scrollbar p-4 space-y-4 bg-white rounded-xl mb-4 border border-gray-200"> <!-- Changed ID -->
-                            <!-- Messages will be displayed here -->
-                            <div id="select-consultation-prompt" class="text-center text-gray-500 py-16"> <!-- Changed ID -->
-                                左のリストから相談相手またはグループを選択してください。
-                            </div>
-                        </div>
-                        <div id="consultation-controls" class="flex items-center space-x-2 hidden"> <!-- Changed ID -->
-                            <input type="text" id="content-input" placeholder="内容を入力..." <!-- Changed ID and placeholder -->
-                                   class="flex-grow p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <button id="send-content-button" <!-- Changed ID -->
-                                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105">
-                                送信
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Custom alert/confirmation modal -->
-            <div id="custom-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
-                <div class="bg-white rounded-2xl p-8 shadow-xl max-w-sm w-full border border-gray-200 text-center">
-                    <p id="modal-message" class="text-gray-700 text-lg mb-6"></p>
-                    <div id="modal-buttons" class="flex justify-center space-x-4">
-                        <button id="modal-ok-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl shadow-md transition duration-300 ease-in-out">OK</button>
-                        <button id="modal-cancel-button" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-xl shadow-md transition duration-300 ease-in-out hidden">キャンセル</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Create Group Consultation Modal -->
-            <div id="create-group-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
-                <div class="bg-white rounded-2xl p-8 shadow-xl max-w-md w-full border border-gray-200">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">新しいグループ相談を作成</h2>
-                    <div class="mb-4">
-                        <label for="group-name-input" class="block text-gray-700 text-sm font-bold mb-2">グループ名:</label>
-                        <input type="text" id="group-name-input" placeholder="グループ名を入力"
-                               class="p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-full">
-                    </div>
-                    <div class="mb-6">
-                        <label class="block text-gray-700 text-sm font-bold mb-2">参加者を選択:</label>
-                        <div id="participant-selection" class="border border-gray-300 rounded-xl p-3 h-40 overflow-y-auto space-y-2">
-                            <!-- Checkboxes for other counselors will be loaded here -->
-                        </div>
-                    </div>
-                    <div class="flex justify-end space-x-4">
-                        <button id="cancel-group-creation" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-xl shadow-md transition duration-300 ease-in-out">
-                            キャンセル
-                        </button>
-                        <button id="create-group-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl shadow-md transition duration-300 ease-in-out">
-                            グループを作成
-                        </button>
-                    </div>
-                </div>
-            </div>
-
+        <div id="message-input-container" class="flex gap-3">
+            <input type="text" id="messageInput" placeholder="メモを入力..."
+                   class="flex-grow p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <button id="sendMessageBtn"
+                    class="px-5 py-3 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors duration-200 shadow-md">
+                送信
+            </button>
         </div>
     </div>
+
+    <!-- フェイク画面 - REMOVED -->
+    <!-- <div id="fake-screen" class="active:flex">
+        <p class="text-4xl font-bold text-gray-700 mb-4">現在の学習状況</p>
+        <p class="text-xl text-gray-600">（授業内容に関する統計データや、無害な学習アドバイスなどをここに表示）</p>
+        <p class="text-sm text-gray-500 mt-8">[Ctrl + H で戻る]</p>
+    </div> -->
 
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, where, addDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-analytics.js"; // Analyticsを使用しない場合は削除可能
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, getDocs, writeBatch, doc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
-        // Firebase configuration (ユーザー提供の新しい設定)
+        // Firebase 設定 - ユーザーから提供された設定を使用
         const firebaseConfig = {
-            apiKey: "AIzaSyDVWhZ4McPs3kbx7Da3THH45jJowK17mBI",
-            authDomain: "c-c-c-v.firebaseapp.com",
-            projectId: "c-c-c-v",
-            storageBucket: "c-c-c-v.firebasestorage.app",
-            messagingSenderId: "241462578829",
-            appId: "1:241462578829:web:9b174584d5dcdc202a5cc4",
-            measurementId: "G-HQDGNS2PX8" // Analyticsを使用しない場合は削除可能
+            apiKey: "AIzaSyDggfvHZMmox-_2N8lT9UjzmJTH36jSNy0",
+            authDomain: "loiloidiot-mail.firebaseapp.com",
+            projectId: "loiloidiot-mail",
+            storageBucket: "loiloidiot-mail.firebasestorage.app",
+            messagingSenderId: "457273591838",
+            appId: "1:457273591838:web:5c30edaf7a908061f9860f",
+            measurementId: "G-QX07FG8730"
         };
 
-        // Initialize Firebase
+        // アプリケーションID (Canvas環境から提供されるグローバル変数)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // Firebase初期化トークン (Canvas環境から提供されるグローバル変数)
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Firebase 初期化
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const analytics = getAnalytics(app); // Analyticsを使用しない場合は削除可能
 
-        // Firestoreのパスで使用するApp ID（projectIdを使用）
-        const appId = firebaseConfig.projectId; // このアプリでは使用しないが、既存のコードとの整合性のため残す
+        // DOM要素の取得
+        const messagesDiv = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const sendMessageBtn = document.getElementById('sendMessageBtn');
+        const clearChatBtn = document.getElementById('clearChatBtn');
+        // const fakeScreen = document.getElementById('fake-screen'); // REMOVED
+        const appContainer = document.getElementById('app-container');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const userIdDisplay = document.getElementById('user-id-display');
+        const userInfoDiv = document.getElementById('user-info');
+        const nicknameInput = document.getElementById('nicknameInput');
+        const setNicknameBtn = document.getElementById('setNicknameBtn');
+        const currentNicknameDisplay = document.querySelector('#currentNicknameDisplay span');
 
-        let currentCounselorId = null; // 現在ログイン中のカウンセラーID
-        let currentConsultationPartnerId = null; // 現在相談している相手のカウンセラーID (個別相談の場合) - Changed variable name
-        let currentConsultationId = null; // 現在選択中の相談のドキュメントID (個別/グループ共通) - Changed variable name
-        let currentConsultationType = null; // 'individual' or 'group' - Changed variable name
+        // NGワードリスト
+        const ngWords = ['vpn', 'プロキシ', '脱出', '監視', '管理者', 'proxy', 'escape', 'monitor', 'admin'];
+        const ngWordReplacement = '🍙';
 
-        let unsubscribeFromCounselors = null; // カウンセラーリストの購読解除関数
-        let unsubscribeFromGroupConsultations = null; // グループ相談リストの購読解除関数 - Changed variable name
-        let unsubscribeFromCurrentConsultation = null; // 現在の相談の購読解除関数 - Changed variable name
+        let userNickname = localStorage.getItem('userNickname');
+        let currentUserId = null;
 
-        let allCounselorsData = []; // 全カウンセラーのデータを保持 (グループ作成モーダル用)
-        let allGroupConsultationsData = []; // ログイン中のカウンセラーが参加しているグループ相談のデータを保持 - Changed variable name
+        const generateAnonymousNickname = () => {
+            const adjectives = ['静かな', '素早い', '賢い', '秘密の', '勇敢な', '自由な', '静寂の', '輝く', '見えない', '未来の'];
+            const nouns = ['学習者', '探究者', '思索家', '記録者', '開拓者', '観察者', '案内人', '伝達者', '収集家', '知識人'];
+            const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+            const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+            const randomNumber = Math.floor(Math.random() * 900) + 100;
+            return `${randomAdjective}${randomNoun}${randomNumber}`;
+        };
 
-        // DOM elements
-        const loginSection = document.getElementById('login-section');
-        const emailInput = document.getElementById('email-input');
-        const passwordInput = document.getElementById('password-input');
-        const loginButton = document.getElementById('login-button');
-        const loginError = document.getElementById('login-error');
-        const chatDashboard = document.getElementById('chat-dashboard'); // Keeping ID as 'chat-dashboard' for consistency with existing JS
-        const logoutButton = document.getElementById('logout-button');
-        const newGroupConsultationButton = document.getElementById('new-group-consultation-button'); // Changed ID
-        const counselorList = document.getElementById('counselor-list');
-        const noCounselorsMessage = document.getElementById('no-counselors-message');
-        const selectedCounselorInfo = document.getElementById('selected-counselor-info');
-        const currentConsultationPartnerName = document.getElementById('current-consultation-partner-name'); // Changed ID
-        const consultationMessagesDiv = document.getElementById('consultation-messages'); // Changed ID
-        const selectConsultationPrompt = document.getElementById('select-consultation-prompt'); // Changed ID
-        const consultationControls = document.getElementById('consultation-controls'); // Changed ID
-        const contentInput = document.getElementById('content-input'); // Changed ID
-        const sendContentButton = document.getElementById('send-content-button'); // Changed ID
+        // ニックネームの初期設定と表示
+        if (!userNickname) {
+            userNickname = generateAnonymousNickname();
+            localStorage.setItem('userNickname', userNickname);
+        }
+        nicknameInput.value = userNickname;
+        currentNicknameDisplay.textContent = userNickname;
 
-        // Custom modal elements
-        const customModal = document.getElementById('custom-modal');
-        const modalMessage = document.getElementById('modal-message');
-        const modalOkButton = document.getElementById('modal-ok-button');
-        const modalCancelButton = document.getElementById('modal-cancel-button');
+        // ニックネーム設定ボタンのイベントリスナー
+        setNicknameBtn.addEventListener('click', () => {
+            const newNickname = nicknameInput.value.trim();
+            if (newNickname) {
+                userNickname = newNickname;
+                localStorage.setItem('userNickname', userNickname);
+                currentNicknameDisplay.textContent = userNickname;
+                displayMessageBox(`ニックネームを「${userNickname}」に設定しました。`, "ニックネーム設定", "blue");
+            } else {
+                displayMessageBox("ニックネームを入力してください。", "エラー", "red");
+            }
+        });
 
-        // Create Group Consultation Modal elements
-        const createGroupModal = document.getElementById('create-group-modal');
-        const groupNameInput = document.getElementById('group-name-input');
-        const participantSelection = document.getElementById('participant-selection');
-        const cancelGroupCreationButton = document.getElementById('cancel-group-creation');
-        const createGroupButton = document.getElementById('create-group-button');
-
-
-        // ログイン状態の監視
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const isEmailPasswordUser = user.providerData.some(
-                    (provider) => provider.providerId === 'password'
-                );
+                currentUserId = user.uid;
+                userIdDisplay.textContent = currentUserId;
+                userInfoDiv.classList.remove('hidden');
+                loadingIndicator.style.display = 'none';
+                console.log("認証成功！ユーザーID:", currentUserId);
 
-                if (isEmailPasswordUser) {
-                    currentCounselorId = user.uid;
-                    console.log('Counselor authenticated:', currentCounselorId);
-                    loginSection.classList.add('hidden');
-                    chatDashboard.classList.remove('hidden');
-                    
-                    // ログイン時に自分のカウンセラープロフィールを更新/作成
-                    await updateCounselorProfile(user.uid, user.email); 
+                const messagesCollectionRef = collection(db, `artifacts/${appId}/public/data/messages`);
+                const q = query(messagesCollectionRef, orderBy('timestamp', 'asc'));
 
-                    startListeningToCounselorsAndConsultations(); // 全ての相談とカウンセラーリストの購読を開始 - Changed function name
-                } else {
-                    console.log('Non-email/password user detected. Signing out.');
-                    signOut(auth);
-                    loginSection.classList.remove('hidden');
-                    chatDashboard.classList.add('hidden');
-                    if (unsubscribeFromCounselors) unsubscribeFromCounselors();
-                    if (unsubscribeFromGroupConsultations) unsubscribeFromGroupConsultations(); // Changed variable name
-                    if (unsubscribeFromCurrentConsultation) unsubscribeFromCurrentConsultation(); // Changed variable name
-                    currentCounselorId = null;
-                }
+                onSnapshot(q, (snapshot) => {
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === "added") {
+                            const message = change.doc.data();
+                            const messageElement = document.createElement('div');
+                            messageElement.classList.add('message', 'mb-2', 'p-3', 'rounded-lg', 'break-words', 'relative', 'overflow-hidden');
+                            messageElement.classList.add('bg-blue-100', 'text-blue-800', 'shadow-sm', 'message-enter');
+
+                            const timestamp = message.timestamp ? message.timestamp.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) : '送信中...';
+                            
+                            messageElement.innerHTML = `
+                                <div class="font-semibold text-blue-700">${message.author}</div>
+                                <div class="text-gray-900">${message.text}</div>
+                                <div class="text-xs text-gray-500 mt-1 text-right">${timestamp}</div>
+                            `;
+                            messagesDiv.appendChild(messageElement);
+
+                            setTimeout(() => messageElement.classList.add('message-enter-active'), 10);
+                            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                        } else if (change.type === "removed") {
+                            const removedMessageId = change.doc.id;
+                            const messageElements = messagesDiv.children;
+                            for (let i = 0; i < messageElements.length; i++) {
+                                if (messageElements[i].dataset.docId === removedMessageId) {
+                                    messagesDiv.removeChild(messageElements[i]);
+                                    break;
+                                }
+                            }
+                        }
+                    });
+                }, (error) => {
+                    console.error("Error getting real-time updates: ", error);
+                    displayMessageBox("メッセージの取得中にエラーが発生しました。", "エラー", "red");
+                });
+
             } else {
-                console.log('No counselor signed in.');
-                loginSection.classList.remove('hidden');
-                chatDashboard.classList.add('hidden');
-                if (unsubscribeFromCounselors) unsubscribeFromCounselors();
-                if (unsubscribeFromGroupConsultations) unsubscribeFromGroupConsultations(); // Changed variable name
-                if (unsubscribeFromCurrentConsultation) unsubscribeFromCurrentConsultation(); // Changed variable name
-                currentCounselorId = null;
-            }
-        });
-
-        // ログイン処理
-        loginButton.addEventListener('click', async () => {
-            const email = emailInput.value;
-            const password = passwordInput.value;
-
-            if (!email || !password) {
-                loginError.textContent = 'メールアドレスとパスワードを入力してください。';
-                loginError.classList.remove('hidden');
-                return;
-            }
-
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-                loginError.classList.add('hidden');
-            } catch (error) {
-                console.error('Login error:', error.code, error.message);
-                if (error.code === 'auth/invalid-email' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/too-many-requests') {
-                    loginError.textContent = 'メールアドレスまたはパスワードが間違っています。';
-                } else {
-                    loginError.textContent = 'ログインに失敗しました。もう一度お試しください。';
-                }
-                loginError.classList.remove('hidden');
-            }
-        });
-
-        // ログアウト処理
-        logoutButton.addEventListener('click', async () => {
-            showCustomModal('ログアウトしますか？', async () => {
+                loadingIndicator.style.display = 'block';
+                console.log("認証試行中...");
                 try {
-                    await signOut(auth);
-                    showCustomModal('ログアウトしました。');
-                } catch (error) {
-                    console.error('Logout error:', error);
-                    showCustomModal('ログアウトに失敗しました。');
-                }
-            }, true);
-        });
-
-        /**
-         * カウンセラープロフィールを更新または作成します。
-         * @param {string} uid - カウンセラーのUID
-         * @param {string} email - カウンセラーのメールアドレス
-         */
-        async function updateCounselorProfile(uid, email) {
-            const counselorRef = doc(db, `counselors`, uid);
-            try {
-                await setDoc(counselorRef, {
-                    uid: uid,
-                    displayName: email, // 仮の表示名。必要であればユーザーに設定させる
-                    lastLogin: serverTimestamp()
-                }, { merge: true }); // merge: true で既存のフィールドを上書きせずに更新
-                console.log('Counselor profile updated/created.');
-            } catch (error) {
-                console.error('Error updating counselor profile:', error);
-            }
-        }
-
-        /**
-         * 全てのカウンセラーとグループ相談のリストをリアルタイムで購読開始します。
-         */
-        function startListeningToCounselorsAndConsultations() { // Changed function name
-            if (!currentCounselorId) {
-                console.error('Current counselor ID is not set.');
-                return;
-            }
-
-            // カウンセラーリストの購読
-            const counselorsRef = collection(db, `counselors`);
-            const qCounselors = query(counselorsRef, where("uid", "!=", currentCounselorId)); // 自分以外のカウンセラー
-            unsubscribeFromCounselors = onSnapshot(qCounselors, (snapshot) => {
-                allCounselorsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderConsultationList(); // リストを再描画 - Changed function name
-            }, (error) => {
-                console.error('Error subscribing to counselors:', error);
-                showCustomModal('カウンセラーリストの読み込み中にエラーが発生しました。');
-            });
-
-            // グループ相談リストの購読
-            const groupConsultationsRef = collection(db, `group_consultations`); // Changed collection name
-            const qGroupConsultations = query(groupConsultationsRef, where("participants", "array-contains", currentCounselorId));
-            unsubscribeFromGroupConsultations = onSnapshot(qGroupConsultations, (snapshot) => { // Changed variable name
-                allGroupConsultationsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderConsultationList(); // リストを再描画 - Changed function name
-            }, (error) => {
-                console.error('Error subscribing to group consultations:', error);
-                showCustomModal('グループ相談リストの読み込み中にエラーが発生しました。');
-            });
-        }
-
-        /**
-         * カウンセラーとグループ相談のリストをレンダリングします。
-         */
-        function renderConsultationList() { // Changed function name
-            counselorList.innerHTML = '';
-            let hasItems = false;
-
-            // 個別相談 (他のカウンセラー)
-            allCounselorsData.forEach(counselor => {
-                if (counselor.uid !== currentCounselorId) { // ログイン中のカウンセラーは表示しない
-                    const listItem = document.createElement('li');
-                    listItem.id = `counselor-${counselor.id}`;
-                    listItem.classList.add('p-3', 'rounded-xl', 'cursor-pointer', 'hover:bg-blue-100', 'transition', 'duration-200', 'ease-in-out', 'flex', 'justify-between', 'items-center', 'shadow-sm');
-                    if (currentConsultationId === counselor.id && currentConsultationType === 'individual') { // Changed variable name
-                        listItem.classList.add('bg-blue-200');
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                        console.log("カスタムトークンで認証を試みました。");
                     } else {
-                        listItem.classList.add('bg-white');
+                        await signInAnonymously(auth);
+                        console.log("匿名認証を試みました。");
                     }
-
-                    listItem.innerHTML = `
-                        <div class="flex-grow min-w-0 overflow-hidden">
-                            <p class="font-semibold text-gray-800 truncate">個別相談: ${escapeHTML(counselor.displayName || counselor.uid)}</p>
-                            <p class="text-sm text-gray-600">最終ログイン: ${counselor.lastLogin ? formatTimestamp(counselor.lastLogin) : 'N/A'}</p>
-                        </div>
-                    `;
-                    listItem.addEventListener('click', () => selectConsultation(counselor.id, 'individual', counselor.displayName || counselor.uid)); // Changed function name
-                    counselorList.appendChild(listItem);
-                    hasItems = true;
+                } catch (error) {
+                    console.error("Error during authentication: ", error);
+                    displayMessageBox("認証に失敗しました。アプリをリロードしてください。", "エラー", "red");
+                    loadingIndicator.style.display = 'none';
                 }
-            });
-
-            // グループ相談
-            allGroupConsultationsData.forEach(group => {
-                const listItem = document.createElement('li');
-                listItem.id = `group-${group.id}`;
-                listItem.classList.add('p-3', 'rounded-xl', 'cursor-pointer', 'hover:bg-blue-100', 'transition', 'duration-200', 'ease-in-out', 'flex', 'justify-between', 'items-center', 'shadow-sm');
-                if (currentConsultationId === group.id && currentConsultationType === 'group') { // Changed variable name
-                    listItem.classList.add('bg-blue-200');
-                } else {
-                    listItem.classList.add('bg-white');
-                }
-
-                listItem.innerHTML = `
-                    <div class="flex-grow min-w-0 overflow-hidden">
-                        <p class="font-semibold text-gray-800 truncate">グループ相談: ${escapeHTML(group.name)}</p>
-                        <p class="text-sm text-gray-600">参加者数: ${group.participants.length}</p>
-                        <p class="text-xs text-gray-500">最終更新: ${group.lastMessageAt ? formatTimestamp(group.lastMessageAt) : 'N/A'}</p>
-                    </div>
-                `;
-                listItem.addEventListener('click', () => selectConsultation(group.id, 'group', group.name)); // Changed function name
-                counselorList.appendChild(listItem);
-                hasItems = true;
-            });
-
-            if (!hasItems) {
-                noCounselorsMessage.classList.remove('hidden');
-                counselorList.appendChild(noCounselorsMessage);
-            } else {
-                noCounselorsMessage.classList.add('hidden');
-            }
-        }
-
-        /**
-         * 相談相手またはグループを選択し、その内容を表示します。
-         * @param {string} id - 選択されたカウンセラーまたはグループのID
-         * @param {string} type - 'individual' or 'group'
-         * @param {string} name - 選択された相手の表示名またはグループ名
-         */
-        async function selectConsultation(id, type, name) { // Changed function name
-            if (!currentCounselorId) {
-                showCustomModal('カウンセラーとしてログインしてください。');
-                return;
-            }
-            if (currentConsultationId === id && currentConsultationType === type) return; // 同じ相談が選択された場合は何もしない
-
-            // 以前選択されていた相談のスタイルをリセット
-            if (currentConsultationId) { // Changed variable name
-                const prevSelected = document.getElementById(`${currentConsultationType === 'individual' ? 'counselor' : 'group'}-${currentConsultationId}`); // Changed variable name
-                if (prevSelected) {
-                    prevSelected.classList.remove('bg-blue-200');
-                    prevSelected.classList.add('bg-white');
-                }
-            }
-
-            currentConsultationId = id; // Changed variable name
-            currentConsultationType = type; // Changed variable name
-            currentConsultationPartnerId = (type === 'individual') ? id : null; // 個別相談の場合のみ相手のIDをセット - Changed variable name
-
-            // 新しく選択された相談のスタイルを適用
-            const selectedListItem = document.getElementById(`${type === 'individual' ? 'counselor' : 'group'}-${id}`);
-            if (selectedListItem) {
-                selectedListItem.classList.add('bg-blue-200');
-                selectedListItem.classList.remove('bg-white');
-            }
-
-            // 相談情報エリアとコントロールを表示
-            selectedCounselorInfo.classList.remove('hidden');
-            consultationControls.classList.remove('hidden'); // Changed ID
-            selectConsultationPrompt.classList.add('hidden'); // Changed ID
-
-            // 相談相手の名前を表示
-            currentConsultationPartnerName.textContent = name; // Changed ID
-
-            // 以前の相談の購読を解除
-            if (unsubscribeFromCurrentConsultation) { // Changed variable name
-                unsubscribeFromCurrentConsultation(); // Changed variable name
-            }
-
-            // 新しい相談の購読を開始
-            const collectionName = (type === 'individual') ? `individual_consultations` : `group_consultations`; // Changed collection name
-            const consultationDocRef = doc(db, collectionName, id);
-
-            unsubscribeFromCurrentConsultation = onSnapshot(consultationDocRef, (docSnap) => { // Changed variable name
-                if (docSnap.exists()) {
-                    const consultationData = docSnap.data();
-                    renderMessages(consultationData.messages || []);
-                } else {
-                    showCustomModal('この相談は存在しないか、終了しました。', () => {
-                        // ドキュメントが存在しない場合、選択を解除しUIをリセット
-                        currentConsultationId = null; // Changed variable name
-                        currentConsultationType = null; // Changed variable name
-                        currentConsultationPartnerId = null; // Changed variable name
-                        consultationMessagesDiv.innerHTML = ''; // Changed ID
-                        selectedCounselorInfo.classList.add('hidden');
-                        consultationControls.classList.add('hidden'); // Changed ID
-                        selectConsultationPrompt.classList.remove('hidden'); // Changed ID
-                        renderConsultationList(); // リストを再描画 - Changed function name
-                    });
-                }
-            }, (error) => {
-                console.error('Error subscribing to selected consultation:', error);
-                showCustomModal('相談内容の読み込み中にエラーが発生しました。');
-            });
-        }
-
-        /**
-         * メッセージを表示エリアにレンダリングします。
-         * @param {Array<Object>} messages - 表示するメッセージの配列
-         */
-        function renderMessages(messages) {
-            consultationMessagesDiv.innerHTML = ''; // 既存のメッセージをクリア - Changed ID
-            messages.forEach(msg => {
-                const messageElement = document.createElement('div');
-                messageElement.classList.add('flex', 'mb-2');
-
-                // 自分のメッセージは右寄せ、相手のメッセージは左寄せ
-                if (msg.senderId === currentCounselorId) {
-                    messageElement.classList.add('justify-end');
-                    messageElement.innerHTML = `
-                        <div class="message-self p-3 rounded-xl max-w-[70%] shadow-sm"> <!-- Changed class name -->
-                            <p class="text-gray-800">${escapeHTML(msg.text)}</p>
-                            <span class="text-xs text-gray-500 block text-right mt-1">
-                                ${msg.senderName ? escapeHTML(msg.senderName) + ' - ' : ''} ${formatTimestamp(msg.timestamp)}
-                            </span>
-                        </div>
-                    `;
-                } else {
-                    messageElement.classList.add('justify-start');
-                    messageElement.innerHTML = `
-                        <div class="message-other p-3 rounded-xl max-w-[70%] shadow-sm"> <!-- Changed class name -->
-                            <p class="text-gray-800">${escapeHTML(msg.text)}</p>
-                            <span class="text-xs text-gray-500 block text-left mt-1">
-                                ${msg.senderName ? escapeHTML(msg.senderName) + ' - ' : ''} ${formatTimestamp(msg.timestamp)}
-                            </span>
-                        </div>
-                    `;
-                }
-                consultationMessagesDiv.appendChild(messageElement); // Changed ID
-            });
-            consultationMessagesDiv.scrollTop = consultationMessagesDiv.scrollHeight; // 最新のメッセージまでスクロール - Changed ID
-        }
-
-        // メッセージ送信
-        sendContentButton.addEventListener('click', sendConsultationContent); // Changed ID and function name
-        contentInput.addEventListener('keypress', (e) => { // Changed ID
-            if (e.key === 'Enter') {
-                sendConsultationContent(); // Changed function name
             }
         });
 
-        /**
-         * 相談内容をFirestoreに送信します。
-         */
-        async function sendConsultationContent() { // Changed function name
-            const text = contentInput.value.trim(); // Changed ID
-            if (text === '' || !currentConsultationId || !currentCounselorId) { // Changed variable name
-                return;
-            }
+        sendMessageBtn.addEventListener('click', async () => {
+            const messageText = messageInput.value.trim();
+            if (messageText && currentUserId) {
+                let maskedMessage = messageText;
+                ngWords.forEach(word => {
+                    const regex = new RegExp(`\\b${word}\\b`, 'gi');
+                    maskedMessage = maskedMessage.replace(regex, ngWordReplacement.repeat(word.length));
+                });
 
-            // 連続送信制限 (簡易的なクライアントサイド制限)
-            sendContentButton.disabled = true; // Changed ID
-            setTimeout(() => {
-                sendContentButton.disabled = false; // Changed ID
-            }, 2000); // 2秒間は連続送信不可
-
-            const collectionName = (currentConsultationType === 'individual') ? `individual_consultations` : `group_consultations`; // Changed variable name and collection name
-            const consultationDocRef = doc(db, collectionName, currentConsultationId); // Changed variable name
-
-            try {
-                const consultationDocSnap = await getDoc(consultationDocRef);
-                if (consultationDocSnap.exists()) {
-                    const consultationData = consultationDocSnap.data();
-                    const updatedMessages = [...(consultationData.messages || []), {
-                        senderId: currentCounselorId,
-                        senderName: auth.currentUser.email, // 送信者の表示名（メールアドレス）
-                        text: text,
+                try {
+                    const messagesCollectionRef = collection(db, `artifacts/${appId}/public/data/messages`);
+                    await addDoc(messagesCollectionRef, {
+                        author: userNickname,
+                        text: maskedMessage,
                         timestamp: serverTimestamp()
-                    }];
-
-                    await updateDoc(consultationDocRef, {
-                        messages: updatedMessages,
-                        lastMessageAt: serverTimestamp()
                     });
-                    contentInput.value = ''; // 入力フィールドをクリア - Changed ID
+                    messageInput.value = '';
+                    console.log("メッセージ送信成功！");
+                } catch (error) {
+                    console.error("Error writing document: ", error);
+                    displayMessageBox("メッセージの送信に失敗しました。", "エラー", "red");
+                }
+            } else if (!currentUserId) {
+                displayMessageBox("まだ認証が完了していません。しばらくお待ちください。", "注意", "yellow");
+                console.log("認証が完了していないため、メッセージを送信できません。");
+            }
+        });
+
+        clearChatBtn.addEventListener('click', () => {
+            displayConfirmBox("本当にチャット履歴をすべてクリアしますか？この操作は元に戻せません。", "チャットクリアの確認", "red", async (confirmed) => {
+                if (confirmed) {
+                    try {
+                        const messagesCollectionRef = collection(db, `artifacts/${appId}/public/data/messages`);
+                        const querySnapshot = await getDocs(messagesCollectionRef);
+                        
+                        const batch = writeBatch(db);
+                        querySnapshot.docs.forEach((d) => {
+                            batch.delete(doc(db, `artifacts/${appId}/public/data/messages`, d.id));
+                        });
+                        await batch.commit();
+
+                        messagesDiv.innerHTML = ''; 
+                        displayMessageBox("チャット履歴がクリアされました。", "完了", "blue");
+                        console.log("チャット履歴がクリアされました。");
+                    } catch (error) {
+                        console.error("Error clearing chat: ", error);
+                        displayMessageBox("チャットのクリア中にエラーが発生しました。", "エラー", "red");
+                    }
+                }
+            });
+        });
+
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessageBtn.click();
+            }
+        });
+
+        // Ctrl+Hの機能は削除されました。
+        /*
+        document.addEventListener('keydown', (event) => {
+            if (event.ctrlKey && event.key === 'h') {
+                event.preventDefault();
+                if (fakeScreen.classList.contains('active')) {
+                    fakeScreen.classList.remove('active');
+                    appContainer.style.display = 'block';
                 } else {
-                    console.error('Consultation document not found.');
-                    showCustomModal('相談セッションが見つかりません。');
+                    fakeScreen.classList.add('active');
+                    appContainer.style.display = 'none';
                 }
-            } catch (error) {
-                console.error('Error sending consultation content:', error);
-                showCustomModal('内容の送信に失敗しました。');
             }
-        }
+        });
+        */
 
-        // 新しいグループ相談作成ボタンのイベントリスナー
-        newGroupConsultationButton.addEventListener('click', async () => { // Changed ID and function name
-            groupNameInput.value = ''; // グループ名をクリア
-            participantSelection.innerHTML = ''; // 参加者リストをクリア
+        function displayMessageBox(message, title = "通知", type = "blue") {
+            const existingBox = document.getElementById('custom-message-box');
+            if (existingBox) existingBox.remove();
 
-            // 自分以外のカウンセラーを参加者選択リストに表示
-            allCounselorsData.forEach(counselor => {
-                if (counselor.uid !== currentCounselorId) {
-                    const div = document.createElement('div');
-                    div.classList.add('flex', 'items-center', 'space-x-2');
-                    div.innerHTML = `
-                        <input type="checkbox" id="counselor-${counselor.uid}-checkbox" value="${counselor.uid}"
-                               class="form-checkbox h-4 w-4 text-blue-600 rounded">
-                        <label for="counselor-${counselor.uid}-checkbox" class="text-gray-700">${escapeHTML(counselor.displayName || counselor.uid)}</label>
-                    `;
-                    participantSelection.appendChild(div);
-                }
+            const box = document.createElement('div');
+            box.id = 'custom-message-box';
+            box.className = `fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50`;
+            box.innerHTML = `
+                <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full mx-4 border-t-4 ${type === 'red' ? 'border-red-500' : type === 'yellow' ? 'border-yellow-500' : 'border-blue-500'}">
+                    <h3 class="text-lg font-bold mb-3 ${type === 'red' ? 'text-red-700' : type === 'yellow' ? 'text-yellow-700' : 'text-blue-700'}">${title}</h3>
+                    <p class="text-gray-700 mb-4">${message}</p>
+                    <button id="message-box-ok-btn" class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400">OK</button>
+                </div>
+            `;
+            document.body.appendChild(box);
+
+            document.getElementById('message-box-ok-btn').addEventListener('click', () => {
+                box.remove();
             });
-            createGroupModal.classList.remove('hidden');
-        });
+        }
 
-        // グループ作成モーダルのキャンセルボタン
-        cancelGroupCreationButton.addEventListener('click', () => {
-            createGroupModal.classList.add('hidden');
-        });
+        function displayConfirmBox(message, title = "確認", type = "blue", callback) {
+            const existingBox = document.getElementById('custom-confirm-box');
+            if (existingBox) existingBox.remove();
 
-        // グループ作成ボタン
-        createGroupButton.addEventListener('click', async () => {
-            const groupName = groupNameInput.value.trim();
-            if (!groupName) {
-                showCustomModal('グループ名を入力してください。');
-                return;
-            }
+            const box = document.createElement('div');
+            box.id = 'custom-confirm-box';
+            box.className = `fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50`;
+            box.innerHTML = `
+                <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full mx-4 border-t-4 ${type === 'red' ? 'border-red-500' : type === 'yellow' ? 'border-yellow-500' : 'border-blue-500'}">
+                    <h3 class="text-lg font-bold mb-3 ${type === 'red' ? 'text-red-700' : type === 'yellow' ? 'text-yellow-700' : 'text-blue-700'}">${title}</h3>
+                    <p class="text-gray-700 mb-4">${message}</p>
+                    <div class="flex justify-end gap-3">
+                        <button id="confirm-box-cancel-btn" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">キャンセル</button>
+                        <button id="confirm-box-ok-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400">OK</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(box);
 
-            const selectedParticipants = [currentCounselorId]; // 自分は必ず参加者
-            document.querySelectorAll('#participant-selection input[type="checkbox"]:checked').forEach(checkbox => {
-                selectedParticipants.push(checkbox.value);
+            document.getElementById('confirm-box-ok-btn').addEventListener('click', () => {
+                box.remove();
+                callback(true);
             });
 
-            if (selectedParticipants.length < 2) {
-                showCustomModal('グループ相談には自分を含め2人以上のカウンセラーを選択してください。');
-                return;
-            }
-
-            try {
-                const newGroupRef = await addDoc(collection(db, `group_consultations`), { // Changed collection name
-                    name: groupName,
-                    participants: selectedParticipants,
-                    createdAt: serverTimestamp(),
-                    lastMessageAt: serverTimestamp(),
-                    messages: []
-                });
-                showCustomModal('グループ相談が作成されました。');
-                createGroupModal.classList.add('hidden');
-                selectConsultation(newGroupRef.id, 'group', groupName); // 作成したグループ相談を選択 - Changed function name
-            } catch (error) {
-                console.error('Error creating group consultation:', error);
-                showCustomModal('グループ相談の作成に失敗しました。');
-            }
-        });
-
-        /**
-         * カスタムモーダルを表示します。
-         * @param {string} message - 表示するメッセージ
-         * @param {Function} onOk - OKボタンが押されたときのコールバック (オプション)
-         * @param {boolean} isConfirm - 確認ダイアログとして表示するか (オプション、デフォルトはfalse)
-         */
-        function showCustomModal(message, onOk = () => {}, isConfirm = false) {
-            modalMessage.textContent = message;
-            modalOkButton.onclick = () => {
-                customModal.classList.add('hidden');
-                onOk();
-            };
-            if (isConfirm) {
-                modalCancelButton.classList.remove('hidden');
-                modalCancelButton.onclick = () => {
-                    customModal.classList.add('hidden');
-                };
-            } else {
-                modalCancelButton.classList.add('hidden');
-            }
-            customModal.classList.remove('hidden');
-        }
-
-        /**
-         * HTMLエスケープ関数
-         * @param {string} str - エスケープする文字列
-         * @returns {string} エスケープされた文字列
-         */
-        function escapeHTML(str) {
-            const div = document.createElement('div');
-            div.appendChild(document.createTextNode(str));
-            return div.innerHTML;
-        }
-
-        /**
-         * タイムスタンプをフォーマットします。
-         * @param {Object} timestamp - Firebase Timestampオブジェクト
-         * @returns {string} フォーマットされた日付と時刻
-         */
-        function formatTimestamp(timestamp) {
-            if (timestamp && timestamp.toDate) {
-                const date = timestamp.toDate();
-                return date.toLocaleString('ja-JP', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-            }
-            return '';
+            document.getElementById('confirm-box-cancel-btn').addEventListener('click', () => {
+                box.remove();
+                callback(false);
+            });
         }
     </script>
 </body>
