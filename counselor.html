@@ -82,7 +82,7 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <!-- Chat list -->
-                    <div class="col-span-1 bg-gray-50 rounded-xl p-4 shadow-inner border border-gray-200 h-[600px] overflow-y-auto custom-scrollbar">
+                    <div class="col-span-1 bg-gray-50 rounded-xl p-4 shadow-inner border border-gray-200 max-h-[calc(100vh-250px)] overflow-y-auto custom-scrollbar"> <!-- ★修正 -->
                         <h2 id="chat-list-title" class="text-xl font-semibold text-gray-800 mb-4">対応待ちチャット</h2>
                         <ul id="chat-list" class="space-y-3">
                             <!-- Chat sessions will be displayed here -->
@@ -91,7 +91,7 @@
                     </div>
 
                     <!-- Chat details and input area -->
-                    <div class="col-span-2 flex flex-col bg-gray-50 rounded-xl p-4 shadow-inner border border-gray-200 h-[600px]">
+                    <div class="col-span-2 flex flex-col bg-gray-50 rounded-xl p-4 shadow-inner border border-gray-200 max-h-[calc(100vh-250px)]"> <!-- ★修正 -->
                         <div id="selected-chat-info" class="text-center text-gray-600 text-md mb-4 p-2 bg-blue-50 rounded-xl hidden">
                             <p>ユーザーID: <span id="current-user-id"></span></p>
                         </div>
@@ -452,7 +452,7 @@
                 sendButton.disabled = false;
                 holdChatButton.classList.add('hidden');
                 endChatButton.classList.add('hidden');
-            } else { // 終了したチャットを選択した場合（リストには表示されないが念のため）
+            } else { // If an ended chat is somehow selected (shouldn't be in list)
                  chatControls.classList.add('hidden');
                  messageInput.disabled = true;
                  sendButton.disabled = true;
