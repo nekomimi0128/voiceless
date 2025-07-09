@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>声なき声 - 心の相談サイト</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* 優しい背景色 */
+        }
+        .chat-message-user {
+            background-color: #e0f2f7; /* ユーザーのメッセージ背景色 */
+            border-bottom-left-radius: 0.75rem; /* rounded-xl */
+            border-top-left-radius: 0.75rem;
+            border-top-right-radius: 0.75rem;
+        }
+        .chat-message-counselor {
+            background-color: #d1e7dd; /* カウンセラーのメッセージ背景色 */
+            border-bottom-right-radius: 0.75rem; /* rounded-xl */
+            border-top-left-radius: 0.75rem;
+            border-top-right-radius: 0.75rem;
+        }
+        /* スクロールバーのスタイル */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <div class="flex-grow flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-2xl border border-gray-200">
+            <!-- トップページの説明文 -->
+            <div id="intro-section" class="text-center mb-8">
+                <h1 class="text-4xl font-extrabold text-blue-700 mb-4">声なき声</h1>
+                <p class="text-gray-700 text-lg leading-relaxed mb-6">
+                    心の奥に抱える、誰にも言えない思い。ここでは、あなたの声を大切に受け止めます。
+                    安心できる場所で、あなたのペースで話してください。ここに来てくれてありがとう。
+                    私たちは、いつでもあなたの隣にいます。
+                </p>
+                <button id="start-chat-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition duration-300 ease-in-out transform hover:scale-105">
+                    相談を始める
+                </button>
+                <button id="show-notes-button" class="mt-4 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-xl transition duration-300 ease-in-out">
+                    利用時の注意
+                </button>
+            </div>
+
+            <!-- チャットセクション -->
+            <div id="chat-section" class="hidden flex flex-col h-[600px]">
+                <div class="text-center text-gray-600 text-md mb-4 p-2 bg-blue-50 rounded-xl">
+                    <p id="chat-intro-message">今、感じていることを教えてください。</p>
+                </div>
+                <div id="messages" class="flex-grow overflow-y-auto custom-scrollbar p-4 space-y-4 bg-gray-50 rounded-xl mb-4 border border-gray-200">
+                    <!-- メッセージがここに表示されます -->
+                    <div id="loading-indicator" class="text-center text-gray-500 hidden">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-500 mx-auto mb-2"></div>
+                        <p>チャットを読み込み中...</p>
+                    </div>
+                    <div id="no-counselor-message" class="text-center text-gray-500 hidden p-4 bg-yellow-50 rounded-xl">
+                        <p>現在、カウンセラーが対応中です。しばらくお待ちください。</p>
+                    </div>
+                </div>
+                <div id="chat-input-area" class="flex items-center space-x-2">
+                    <input type="text" id="message-input" placeholder="メッセージを入力..."
+                           class="flex-grow p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button id="send-button"
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105">
+                        送信
+                    </button>
+                </div>
+            </div>
+
+            <!-- 利用時の注意モーダル -->
+            <div id="notes-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
+                <div class="bg-white rounded-2xl p-8 shadow-xl max-w-md w-full border border-gray-200">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">利用時の注意</h2>
+                    <ul class="list-disc list-inside text-gray-700 space-y-2 mb-6">
+                        <li>このサイトは医療行為を提供するものではありません。</li>
+                        <li>必要に応じて、警察などの機関に情報を提供する場合があります。</li>
+                        <li>自傷行為・自殺に関するアドバイスや手段の提供はできません。</li>
+                    </ul>
+                    <p class="text-sm text-gray-600 text-center mb-6">
+                        サイトを利用する時点で、上記の内容に同意したものとみなします。
+                    </p>
+                    <button id="close-notes-modal" class="block mx-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl shadow-md transition duration-300 ease-in-out">
+                        閉じる
+                    </button>
+                </div>
+            </div>
+
+            <!-- カスタムアラート/確認モーダル (index.html用) -->
+            <div id="custom-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
+                <div class="bg-white rounded-2xl p-8 shadow-xl max-w-sm w-full border border-gray-200 text-center">
+                    <p id="modal-message" class="text-gray-700 text-lg mb-6"></p>
+                    <div id="modal-buttons" class="flex justify-center space-x-4">
+                        <button id="modal-ok-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl shadow-md transition duration-300 ease-in-out">OK</button>
+                        <button id="modal-cancel-button" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-xl shadow-md transition duration-300 ease-in-out hidden">キャンセル</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, where, addDoc, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-analytics.js"; // Analyticsを使用しない場合は削除可能
+
+        // Firebaseの設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyDIxoygp04qFtzC9aPOcpgoGOpOhGtd-84",
+            authDomain: "project-voiceless.firebaseapp.com",
+            projectId: "project-voiceless",
+            storageBucket: "project-voiceless.firebasestorage.app",
+            messagingSenderId: "51208171407",
+            appId: "1:51208171407:web:582e08ff061a705d2a25fa",
+            measurementId: "G-BH6NNVGC07" // Analyticsを使用しない場合は削除可能
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const analytics = getAnalytics(app); // Analyticsを使用しない場合は削除可能
+
+        // Firestoreのパスで使用するApp ID（projectIdを使用）
+        const appId = firebaseConfig.projectId;
+
+        let userId = null; // 現在のユーザーID
+        let currentChatId = null; // 現在のチャットID
+        let unsubscribeFromChat = null; // onSnapshotの購読解除関数
+
+        const introSection = document.getElementById('intro-section');
+        const chatSection = document.getElementById('chat-section');
+        const startChatButton = document.getElementById('start-chat-button');
+        const showNotesButton = document.getElementById('show-notes-button');
+        const notesModal = document.getElementById('notes-modal');
+        const closeNotesModalButton = document.getElementById('close-notes-modal');
+        const messagesDiv = document.getElementById('messages');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const noCounselorMessage = document.getElementById('no-counselor-message');
+        const chatInputArea = document.getElementById('chat-input-area');
+
+        // カスタムモーダル要素 (index.htmlに追加)
+        const customModal = document.getElementById('custom-modal');
+        const modalMessage = document.getElementById('modal-message');
+        const modalOkButton = document.getElementById('modal-ok-button');
+        const modalCancelButton = document.getElementById('modal-cancel-button');
+
+        /**
+         * カスタムモーダルを表示します。
+         * @param {string} message - 表示するメッセージ
+         * @param {Function} onOk - OKボタンが押されたときのコールバック (オプション)
+         * @param {boolean} isConfirm - 確認ダイアログとして表示するか (オプション、デフォルトはfalse)
+         */
+        function showCustomModal(message, onOk = () => {}, isConfirm = false) {
+            modalMessage.textContent = message;
+            modalOkButton.onclick = () => {
+                customModal.classList.add('hidden');
+                onOk();
+            };
+            if (isConfirm) {
+                modalCancelButton.classList.remove('hidden');
+                modalCancelButton.onclick = () => {
+                    customModal.classList.add('hidden');
+                };
+            } else {
+                modalCancelButton.classList.add('hidden');
+            }
+            customModal.classList.remove('hidden');
+        }
+
+        // 利用時の注意モーダル表示/非表示
+        showNotesButton.addEventListener('click', () => {
+            notesModal.classList.remove('hidden');
+        });
+
+        closeNotesModalButton.addEventListener('click', () => {
+            notesModal.classList.add('hidden');
+        });
+
+        // チャット開始ボタン
+        startChatButton.addEventListener('click', async () => {
+            introSection.classList.add('hidden');
+            chatSection.classList.remove('hidden');
+            loadingIndicator.classList.remove('hidden');
+            chatInputArea.classList.remove('hidden');
+            messagesDiv.innerHTML = ''; // 新しい相談開始時にメッセージをクリア
+            await initializeChatSession();
+        });
+
+        // Firebase認証状態の監視
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
+                console.log('Firebase認証済み:', userId);
+            } else {
+                console.log('Firebase認証なし、匿名認証を試行');
+                // 匿名認証
+                try {
+                    const userCredential = await signInAnonymously(auth);
+                    userId = userCredential.user.uid;
+                    console.log('匿名認証成功:', userId);
+                } catch (error) {
+                    console.error('匿名認証エラー:', error);
+                    showCustomModal('認証に失敗しました。ページをリロードしてください。');
+                }
+            }
+        });
+
+        /**
+         * チャットセッションを初期化または再開します。
+         */
+        async function initializeChatSession() {
+            if (!userId) {
+                console.warn('ユーザーIDがまだ利用できません。認証を待機します。');
+                return;
+            }
+
+            loadingIndicator.classList.remove('hidden');
+            noCounselorMessage.classList.add('hidden');
+            messageInput.disabled = false; // 入力欄を有効化
+            sendButton.disabled = false; // 送信ボタンを有効化
+
+            // 既存のチャットセッションを探す
+            const chatsCollectionRef = collection(db, `artifacts/${appId}/public/data/chats`);
+            const q = query(chatsCollectionRef, where("userId", "==", userId), where("status", "in", ["waiting", "active"]));
+
+            try {
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                    // 既存のチャットセッションが見つかった場合
+                    const existingChatDoc = querySnapshot.docs[0];
+                    currentChatId = existingChatDoc.id;
+                    console.log('既存のチャットセッションを再開:', currentChatId);
+                    startListeningToChat(currentChatId);
+                } else {
+                    // 新しいチャットセッションを作成
+                    console.log('新しいチャットセッションを作成');
+                    const newChatRef = await addDoc(chatsCollectionRef, {
+                        userId: userId,
+                        counselorId: null, // まだカウンセラーは割り当てられていない
+                        status: 'waiting', // 待機中
+                        messages: [], // メッセージ配列
+                        createdAt: serverTimestamp(),
+                        lastMessageAt: serverTimestamp()
+                    });
+                    currentChatId = newChatRef.id;
+                    startListeningToChat(currentChatId);
+                }
+            } catch (error) {
+                console.error('チャットセッションの初期化エラー:', error);
+                showCustomModal('チャットの開始に失敗しました。');
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+
+        /**
+         * 特定のチャットIDのメッセージをリアルタイムで購読します。
+         * @param {string} chatId - 購読するチャットのID
+         */
+        function startListeningToChat(chatId) {
+            if (unsubscribeFromChat) {
+                unsubscribeFromChat(); // 既存の購読を解除
+            }
+
+            const chatDocRef = doc(db, `artifacts/${appId}/public/data/chats`, chatId);
+
+            unsubscribeFromChat = onSnapshot(chatDocRef, (docSnap) => {
+                loadingIndicator.classList.add('hidden');
+                if (docSnap.exists()) {
+                    const chatData = docSnap.data();
+                    console.log('チャットデータ更新:', chatData);
+                    renderMessages(chatData.messages || []);
+
+                    // カウンセラーからの未読メッセージを既読にする
+                    if (chatData.status === 'active' || chatData.status === 'waiting') {
+                        markMessagesAsRead(chatId, 'user', chatData.messages);
+                    }
+
+                    // チャットステータスの更新を監視
+                    if (chatData.status === 'ended') {
+                        handleChatEnded();
+                    } else if (chatData.status === 'waiting' && !chatData.counselorId) {
+                        noCounselorMessage.classList.remove('hidden');
+                        chatInputArea.classList.remove('hidden'); // 入力エリアは表示
+                        messageInput.disabled = false;
+                        sendButton.disabled = false;
+                    } else if (chatData.status === 'active' && chatData.counselorId) {
+                        noCounselorMessage.classList.add('hidden');
+                        chatInputArea.classList.remove('hidden'); // 入力エリアは表示
+                        messageInput.disabled = false;
+                        sendButton.disabled = false;
+                    }
+                } else {
+                    console.log('チャットドキュメントが存在しません。');
+                    handleChatEnded(); // ドキュメントが削除された場合もチャット終了とみなす
+                }
+            }, (error) => {
+                console.error('チャットの購読エラー:', error);
+                showCustomModal('チャットの読み込み中にエラーが発生しました。');
+                loadingIndicator.classList.add('hidden');
+            });
+        }
+
+        /**
+         * 未読メッセージを既読にする関数
+         * @param {string} chatId - チャットID
+         * @param {'user'|'counselor'} readerType - 既読にする側 ('user' または 'counselor')
+         * @param {Array<Object>} currentMessages - 現在のメッセージ配列 (onSnapshotから直接渡す)
+         */
+        async function markMessagesAsRead(chatId, readerType, currentMessages) {
+            const chatDocRef = doc(db, `artifacts/${appId}/public/data/chats`, chatId);
+            let needsUpdate = false;
+            const updatedMessages = currentMessages.map(msg => {
+                // 相手からのメッセージで、かつまだ既読になっていないもの
+                if (readerType === 'user' && msg.sender === 'counselor' && !msg.readByUser) {
+                    needsUpdate = true;
+                    return { ...msg, readByUser: true };
+                }
+                return msg;
+            });
+
+            if (needsUpdate) {
+                try {
+                    await updateDoc(chatDocRef, { messages: updatedMessages });
+                    console.log(`Messages marked as read by ${readerType} for chat ${chatId}`);
+                } catch (error) {
+                    console.error(`Failed to mark messages as read by ${readerType}:`, error);
+                }
+            }
+        }
+
+
+        /**
+         * メッセージを表示エリアにレンダリングします。
+         * @param {Array<Object>} messages - 表示するメッセージの配列
+         */
+        function renderMessages(messages) {
+            messagesDiv.innerHTML = ''; // 既存のメッセージをクリア
+            messages.forEach(msg => {
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('flex', 'mb-2');
+
+                if (msg.sender === 'user') {
+                    messageElement.classList.add('justify-end');
+                    messageElement.innerHTML = `
+                        <div class="chat-message-user p-3 rounded-xl max-w-[70%] shadow-sm">
+                            <p class="text-gray-800">${escapeHTML(msg.text)}</p>
+                            <span class="text-xs text-gray-500 block text-right mt-1">
+                                ${formatTimestamp(msg.timestamp)}
+                                ${msg.readByCounselor ? '<span class="text-blue-500 ml-1">既読</span>' : ''}
+                            </span>
+                        </div>
+                    `;
+                } else if (msg.sender === 'counselor') {
+                    messageElement.classList.add('justify-start');
+                    messageElement.innerHTML = `
+                        <div class="chat-message-counselor p-3 rounded-xl max-w-[70%] shadow-sm">
+                            <p class="text-gray-800">${escapeHTML(msg.text)}</p>
+                            <span class="text-xs text-gray-500 block text-left mt-1">
+                                ${formatTimestamp(msg.timestamp)}
+                                ${msg.readByUser ? '<span class="text-blue-500 ml-1">既読</span>' : ''}
+                            </span>
+                        </div>
+                    `;
+                }
+                messagesDiv.appendChild(messageElement);
+            });
+            messagesDiv.scrollTop = messagesDiv.scrollHeight; // 最新のメッセージまでスクロール
+        }
+
+        /**
+         * チャット終了時の処理
+         */
+        function handleChatEnded() {
+            if (unsubscribeFromChat) {
+                unsubscribeFromChat(); // 購読を解除
+                unsubscribeFromChat = null;
+            }
+            currentChatId = null;
+            chatInputArea.classList.add('hidden'); // 入力エリアを非表示
+            messageInput.disabled = true; // 入力欄を無効化
+            sendButton.disabled = true; // 送信ボタンを無効化
+            noCounselorMessage.classList.add('hidden'); // 待機メッセージを非表示
+            messagesDiv.innerHTML = ''; // 履歴をクリア
+            showCustomModal('チャットが終了しました。新しい相談を開始するには、トップページに戻って「相談を始める」ボタンを押してください。');
+        }
+
+        // メッセージ送信
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        /**
+         * メッセージをFirestoreに送信します。
+         */
+        async function sendMessage() {
+            const text = messageInput.value.trim();
+            if (text === '' || !currentChatId) {
+                return;
+            }
+
+            // Anti-spam: Client-side rate limiting
+            sendButton.disabled = true;
+            setTimeout(() => {
+                sendButton.disabled = false;
+            }, 2000); // 2-second cooldown
+
+            const chatDocRef = doc(db, `artifacts/${appId}/public/data/chats`, currentChatId);
+
+            try {
+                // Get existing messages array and add new message
+                const chatDocSnap = await getDoc(chatDocRef);
+                if (chatDocSnap.exists()) {
+                    const chatData = chatDocSnap.data();
+                    const updatedMessages = [...(chatData.messages || []), {
+                        sender: 'user',
+                        text: text,
+                        timestamp: serverTimestamp(),
+                        readByCounselor: false, // Counselor has not read it yet
+                        readByUser: true // User read it themselves
+                    }];
+
+                    await updateDoc(chatDocRef, {
+                        messages: updatedMessages,
+                        lastMessageAt: serverTimestamp()
+                    });
+                    messageInput.value = ''; // Clear input field
+                } else {
+                    console.error('Chat document not found.');
+                    showCustomModal('チャットセッションが見つかりません。再開してください。');
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                showCustomModal('メッセージの送信に失敗しました。');
+            }
+        }
+
+        /**
+         * Displays a custom modal.
+         * @param {string} message - Message to display
+         * @param {Function} onOk - Callback when OK button is pressed (optional)
+         * @param {boolean} isConfirm - Whether to display as a confirmation dialog (optional, default false)
+         */
+        function showCustomModal(message, onOk = () => {}, isConfirm = false) {
+            modalMessage.textContent = message;
+            modalOkButton.onclick = () => {
+                customModal.classList.add('hidden');
+                onOk();
+            };
+            if (isConfirm) {
+                modalCancelButton.classList.remove('hidden');
+                modalCancelButton.onclick = () => {
+                    customModal.classList.add('hidden');
+                };
+            } else {
+                modalCancelButton.classList.add('hidden');
+            }
+            customModal.classList.remove('hidden');
+        }
+
+        /**
+         * HTML escape function.
+         * @param {string} str - String to escape
+         * @returns {string} Escaped string
+         */
+        function escapeHTML(str) {
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+
+        /**
+         * Formats a timestamp.
+         * @param {Object} timestamp - Firebase Timestamp object
+         * @returns {string} Formatted date and time
+         */
+        function formatTimestamp(timestamp) {
+            if (timestamp && timestamp.toDate) {
+                const date = timestamp.toDate();
+                return date.toLocaleString('ja-JP', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+            return '';
+        }
+    </script>
+</body>
+</html>
