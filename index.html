@@ -40,13 +40,27 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
+        /* Full screen overlay for loading */
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(240, 244, 248, 0.9); /* body background with transparency */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
     </style>
 </head>
 <body class="flex flex-col min-h-screen">
     <div class="flex-grow flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl p-6 w-full max-w-2xl border border-gray-200">
             <!-- トップページの説明文 -->
-            <div id="intro-section" class="text-center mb-8">
+            <div id="intro-section" class="text-center mb-8 hidden"> <!-- Added hidden by default -->
                 <h1 class="text-4xl font-extrabold text-blue-700 mb-4">声なき声</h1>
                 <p class="text-gray-700 text-lg leading-relaxed mb-6">
                     心の奥に抱える、誰にも言えない思い。ここでは、あなたの声を大切に受け止めます。
@@ -62,7 +76,7 @@
             </div>
 
             <!-- チャットセクション -->
-            <div id="chat-section" class="hidden flex flex-col max-h-[calc(100vh-150px)]"> <!-- ★修正 -->
+            <div id="chat-section" class="hidden flex flex-col max-h-[calc(100vh-150px)]">
                 <div class="text-center text-gray-600 text-md mb-4 p-2 bg-blue-50 rounded-xl">
                     <p id="chat-intro-message">今、感じていることを教えてください。</p>
                 </div>
@@ -117,6 +131,12 @@
         </div>
     </div>
 
+    <!-- Loading Overlay - Shown by default, hidden by JS after auth state is determined -->
+    <div id="loading-overlay">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-500"></div>
+        <p class="mt-4 text-gray-700">認証状態を確認中...</p>
+    </div>
+
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
@@ -167,6 +187,9 @@
         const modalOkButton = document.getElementById('modal-ok-button');
         const modalCancelButton = document.getElementById('modal-cancel-button');
 
+        // Loading overlay element
+        const loadingOverlay = document.getElementById('loading-overlay'); // Get reference to the new overlay
+
         /**
          * カスタムモーダルを表示します。
          * @param {string} message - 表示するメッセージ
@@ -192,15 +215,18 @@
 
         // 利用時の注意モーダル表示/非表示
         showNotesButton.addEventListener('click', () => {
+            console.log('Show notes button clicked.'); // Debug log
             notesModal.classList.remove('hidden');
         });
 
         closeNotesModalButton.addEventListener('click', () => {
+            console.log('Close notes modal button clicked.'); // Debug log
             notesModal.classList.add('hidden');
         });
 
         // チャット開始ボタン
         startChatButton.addEventListener('click', async () => {
+            console.log('Start chat button clicked.'); // Debug log
             introSection.classList.add('hidden');
             chatSection.classList.remove('hidden');
             loadingIndicator.classList.remove('hidden');
@@ -211,19 +237,24 @@
 
         // Firebase認証状態の監視
         onAuthStateChanged(auth, async (user) => {
+            loadingOverlay.classList.add('hidden'); // Hide loading overlay once auth state is known
+
             if (user) {
                 userId = user.uid;
                 console.log('Firebase認証済み:', userId);
+                introSection.classList.remove('hidden'); // Show intro section after auth
             } else {
                 console.log('Firebase認証なし、匿名認証を試行');
-                // 匿名認証
                 try {
                     const userCredential = await signInAnonymously(auth);
                     userId = userCredential.user.uid;
                     console.log('匿名認証成功:', userId);
+                    introSection.classList.remove('hidden'); // Show intro section after successful anonymous auth
                 } catch (error) {
                     console.error('匿名認証エラー:', error);
                     showCustomModal('認証に失敗しました。ページをリロードしてください。');
+                    // If auth fails, keep loading overlay hidden but don't show intro section
+                    // Or show an error message prominently.
                 }
             }
         });
@@ -234,6 +265,9 @@
         async function initializeChatSession() {
             if (!userId) {
                 console.warn('ユーザーIDがまだ利用できません。認証を待機します。');
+                // This scenario should be less likely with the loading overlay, but good to keep the check.
+                showCustomModal('認証が完了していません。しばらく待ってからもう一度お試しください。');
+                loadingIndicator.classList.add('hidden');
                 return;
             }
 
