@@ -211,6 +211,44 @@
         body.dark-mode #mention-autocomplete div:hover {
             background-color: #4a5568;
         }
+
+        /* Dark mode for custom message/confirm boxes */
+        body.dark-mode #custom-message-box .bg-white,
+        body.dark-mode #custom-confirm-box .bg-white {
+            background-color: #2d3748; /* Dark container background */
+        }
+        body.dark-mode #custom-message-box .text-gray-700,
+        body.dark-mode #custom-confirm-box .text-gray-700 {
+            color: #e2e8f0; /* Light text */
+        }
+        body.dark-mode #custom-message-box .text-red-700,
+        body.dark-mode #custom-confirm-box .text-red-700 {
+            color: #fc8181; /* Lighter red for dark mode */
+        }
+        body.dark-mode #custom-message-box .text-yellow-700,
+        body.dark-mode #custom-confirm-box .text-yellow-700 {
+            color: #faf089; /* Lighter yellow for dark mode */
+        }
+        body.dark-mode #custom-message-box .text-blue-700,
+        body.dark-mode #custom-confirm-box .text-blue-700 {
+            color: #90cdf4; /* Lighter blue for dark mode */
+        }
+        body.dark-mode #message-box-ok-btn,
+        body.dark-mode #confirm-box-ok-btn {
+            background-color: #63b3ed; /* Lighter blue for dark mode button */
+            color: #2d3748; /* Dark text for contrast */
+        }
+        body.dark-mode #message-box-ok-btn:hover,
+        body.dark-mode #confirm-box-ok-btn:hover {
+            background-color: #4299e1;
+        }
+        body.dark-mode #confirm-box-cancel-btn {
+            background-color: #a0aec0; /* Lighter gray */
+            color: #2d3748;
+        }
+        body.dark-mode #confirm-box-cancel-btn:hover {
+            background-color: #cbd5e0;
+        }
     </style>
 </head>
 <body>
@@ -220,7 +258,7 @@
 
         <div id="loading-indicator" class="text-center text-gray-500 mb-4" style="display: none;">
             <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-            <p>読み込み中...</p>
+            <p id="loading-message" class="text-sm font-mono"></p>
         </div>
 
         <div id="user-info" class="text-sm text-gray-500 mb-4 hidden">
@@ -314,6 +352,7 @@
         const clearChatBtn = document.getElementById('clearChatBtn');
         const appContainer = document.getElementById('app-container');
         const loadingIndicator = document.getElementById('loading-indicator');
+        const loadingMessage = document.getElementById('loading-message'); // 新しい要素
         const userIdDisplay = document.getElementById('user-id-display');
         const userInfoDiv = document.getElementById('user-info');
         const nicknameInput = document.getElementById('nicknameInput');
@@ -321,7 +360,7 @@
         const currentNicknameDisplay = document.querySelector('#currentNicknameDisplay span');
         const onlineUsersList = document.getElementById('onlineUsersList');
         const toggleNotificationBtn = document.getElementById('toggleNotificationBtn');
-        const toggleDarkModeBtn = document.getElementById('toggleDarkModeBtn'); // ダークモードボタン
+        const toggleDarkModeBtn = document.getElementById('toggleDarkModeBtn');
         const helpBtn = document.getElementById('helpBtn');
         const mentionAutocomplete = document.getElementById('mention-autocomplete');
 
@@ -332,9 +371,39 @@
         let userNickname = localStorage.getItem('userNickname');
         let currentUserId = null;
         let notificationEnabled = localStorage.getItem('notificationEnabled') === 'true';
-        let darkModeEnabled = localStorage.getItem('darkModeEnabled') === 'true'; // ダークモード設定をローカルストレージから取得
+        let darkModeEnabled = localStorage.getItem('darkModeEnabled') === 'true';
         let onlineUsers = {}; // { userId: nickname }
         let allKnownNicknames = new Set();
+
+        // --- ローディングアニメーションメッセージ ---
+        const loadingMessages = [
+            "Initializing secure connection...",
+            "Authenticating anonymous user...",
+            "Fetching real-time data...",
+            "Synchronizing chat history...",
+            "Establishing peer-to-peer link...",
+            "Encrypting data streams...",
+            "Optimizing network protocols...",
+            "Preparing user interface...",
+            "Ready for communication."
+        ];
+        let loadingMessageIndex = 0;
+        let loadingInterval;
+
+        function startLoadingAnimation() {
+            loadingIndicator.style.display = 'block';
+            loadingMessageIndex = 0;
+            loadingMessage.textContent = loadingMessages[loadingMessageIndex]; // 初回メッセージを設定
+            loadingInterval = setInterval(() => {
+                loadingMessageIndex = (loadingMessageIndex + 1) % loadingMessages.length;
+                loadingMessage.textContent = loadingMessages[loadingMessageIndex];
+            }, 1500); // 1.5秒ごとにメッセージを変更
+        }
+
+        function stopLoadingAnimation() {
+            loadingIndicator.style.display = 'none';
+            clearInterval(loadingInterval);
+        }
 
         // --- ダークモードの初期設定 ---
         if (darkModeEnabled) {
@@ -383,7 +452,7 @@
                 currentUserId = user.uid;
                 userIdDisplay.textContent = currentUserId;
                 userInfoDiv.classList.remove('hidden');
-                loadingIndicator.style.display = 'none';
+                stopLoadingAnimation(); // 認証成功でローディング停止
                 console.log("認証成功！ユーザーID:", currentUserId);
 
                 updateUserOnlineStatus(currentUserId, userNickname);
@@ -452,7 +521,7 @@
                                     if (Notification.permission === "granted") {
                                         new Notification(`${message.author}からのメッセージ`, {
                                             body: message.text,
-                                            icon: 'https://placehold.co/48x48/007bff/ffffff?text=M'
+                                            icon: 'https://placehold.co/48x48/007bff/ffffff?text=M' // 仮のアイコン
                                         });
                                     } else if (Notification.permission !== "denied") {
                                         Notification.requestPermission().then(permission => {
@@ -543,10 +612,14 @@
                     console.log("オンラインユーザー:", onlineUsers);
                 }, (error) => {
                     console.error("Error getting online users:", error);
+                    // 権限エラーの場合、ユーザーに通知
+                    if (error.code === 'permission-denied') {
+                        displayMessageBox("オンラインユーザー情報の取得に権限エラーが発生しました。Firebaseのセキュリティルールを確認してください。", "エラー", "red");
+                    }
                 });
 
             } else {
-                loadingIndicator.style.display = 'block';
+                startLoadingAnimation(); // 認証開始時にローディングアニメーションを開始
                 console.log("認証試行中...");
                 try {
                     await signInAnonymously(auth);
@@ -554,7 +627,7 @@
                 } catch (error) {
                     console.error("認証に失敗しました:", error);
                     displayMessageBox("認証に失敗しました。アプリをリロードしてください。", "エラー", "red");
-                    loadingIndicator.style.display = 'none';
+                    stopLoadingAnimation(); // 認証失敗でローディング停止
                 }
             }
         });
@@ -570,6 +643,10 @@
                 }, { merge: true });
             } catch (error) {
                 console.error("オンライン状態の更新に失敗しました:", error);
+                // 権限エラーの場合、ユーザーに通知
+                if (error.code === 'permission-denied') {
+                    displayMessageBox("オンライン状態の更新に権限エラーが発生しました。Firebaseのセキュリティルールを確認してください。", "エラー", "red");
+                }
             }
         }
 
@@ -793,6 +870,7 @@
 
             document.getElementById('confirm-box-ok-btn').addEventListener('click', () => {
                 box.remove();
+                callback(true);
             });
 
             document.getElementById('confirm-box-cancel-btn').addEventListener('click', () => {
