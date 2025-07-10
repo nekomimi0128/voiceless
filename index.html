@@ -190,7 +190,7 @@
         const introSection = document.getElementById('intro-section');
         const chatSection = document.getElementById('chat-section');
         const startChatButton = document.getElementById('start-chat-button');
-        const showNotesButton = document.getElementById('show-notes-button');
+        const showNotesButton = document.getElementById('show-notes-button'); // ★修正箇所
         const notesModal = document.getElementById('notes-modal');
         const closeNotesModalButton = document.getElementById('close-notes-modal');
         const messagesDiv = document.getElementById('messages');
@@ -215,7 +215,7 @@
          * @param {Function} onOk - OKボタンが押されたときのコールバック (オプション)
          * @param {boolean} isConfirm - 確認ダイアログとして表示するか (オプション、デフォルトはfalse)
          */
-        function appShowCustomModal(message, onOk = () => {}, isConfirm = false) { // ★関数名を変更
+        function appShowCustomModal(message, onOk = () => {}, isConfirm = false) {
             modalMessage.textContent = message;
             modalOkButton.onclick = () => {
                 customModal.classList.add('hidden');
@@ -273,7 +273,7 @@
                     introSection.classList.remove('hidden'); // Show intro section after successful anonymous auth
                 } catch (error) {
                     console.error('匿名認証エラー:', error);
-                    appShowCustomModal('認証に失敗しました。ページをリロードしてください。'); // ★関数名を変更
+                    appShowCustomModal('認証に失敗しました。ページをリロードしてください。');
                     // If auth fails, keep loading overlay hidden but don't show intro section
                     // Or show an error message prominently.
                 }
@@ -289,7 +289,7 @@
             if (!userId) {
                 console.warn('ユーザーIDがまだ利用できません。認証を待機します。');
                 // This scenario should be less likely with the loading overlay, but good to keep the check.
-                appShowCustomModal('認証が完了していません。しばらく待ってからもう一度お試しください。'); // ★関数名を変更
+                appShowCustomModal('認証が完了していません。しばらく待ってからもう一度お試しください。');
                 loadingIndicator.classList.add('hidden');
                 return;
             }
@@ -327,7 +327,7 @@
                 }
             } catch (error) {
                 console.error('チャットセッションの初期化エラー:', error);
-                appShowCustomModal('チャットの開始に失敗しました。'); // ★関数名を変更
+                appShowCustomModal('チャットの開始に失敗しました。');
                 loadingIndicator.classList.add('hidden');
             }
         }
@@ -375,7 +375,7 @@
                 }
             }, (error) => {
                 console.error('チャットの購読エラー:', error);
-                appShowCustomModal('チャットの読み込み中にエラーが発生しました。'); // ★関数名を変更
+                appShowCustomModal('チャットの読み込み中にエラーが発生しました。');
                 loadingIndicator.classList.add('hidden');
             });
         }
@@ -461,7 +461,7 @@
             sendButton.disabled = true; // 送信ボタンを無効化
             noCounselorMessage.classList.add('hidden'); // 待機メッセージを非表示
             messagesDiv.innerHTML = ''; // 履歴をクリア
-            appShowCustomModal('チャットが終了しました。新しい相談を開始するには、トップページに戻って「相談を始める」ボタンを押してください。'); // ★関数名を変更
+            appShowCustomModal('チャットが終了しました。新しい相談を開始するには、トップページに戻って「相談を始める」ボタンを押してください。');
         }
 
         // メッセージ送信
@@ -509,35 +509,12 @@
                     messageInput.value = ''; // Clear input field
                 } else {
                     console.error('Chat document not found.');
-                    appShowCustomModal('チャットセッションが見つかりません。再開してください。'); // ★関数名を変更
+                    appShowCustomModal('チャットセッションが見つかりません。再開してください。');
                 }
             } catch (error) {
                 console.error('Error sending message:', error);
-                appShowCustomModal('メッセージの送信に失敗しました。'); // ★関数名を変更
+                appShowCustomModal('メッセージの送信に失敗しました。');
             }
-        }
-
-        /**
-         * Displays a custom modal.
-         * @param {string} message - Message to display
-         * @param {Function} onOk - Callback when OK button is pressed (optional)
-         * @param {boolean} isConfirm - Whether to display as a confirmation dialog (optional, default false)
-         */
-        function appShowCustomModal(message, onOk = () => {}, isConfirm = false) { // ★関数名を変更
-            modalMessage.textContent = message;
-            modalOkButton.onclick = () => {
-                customModal.classList.add('hidden');
-                onOk();
-            };
-            if (isConfirm) {
-                modalCancelButton.classList.remove('hidden');
-                modalCancelButton.onclick = () => {
-                    customModal.classList.add('hidden');
-                };
-            } else {
-                modalCancelButton.classList.add('hidden');
-            }
-            customModal.classList.remove('hidden');
         }
 
         /**
