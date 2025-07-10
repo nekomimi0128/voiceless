@@ -46,26 +46,53 @@
             transition: opacity 0.3s ease-out, transform 0.3s ease-out;
         }
 
-        /* Fake screen styling - REMOVED */
-        /* #fake-screen {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #e0e0e0;
-            color: #555;
-            justify-content: center;
-            align-items: center;
-            font-size: 2em;
-            flex-direction: column;
-            z-index: 1000;
-            text-align: center;
+        /* Mention highlight */
+        .mention-highlight {
+            background-color: #fff3cd; /* Yellowish background */
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-weight: bold;
         }
-        #fake-screen.active {
-            display: flex;
-        } */
+
+        /* Online indicator */
+        .online-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #28a745; /* Green */
+            margin-left: 5px;
+        }
+        .offline-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #6c757d; /* Gray */
+            margin-left: 5px;
+        }
+
+        /* Autocomplete dropdown */
+        #mention-autocomplete {
+            position: absolute;
+            bottom: 100%; /* inputの上 */
+            left: 0;
+            right: 0;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 10;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+        }
+        #mention-autocomplete div {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+        #mention-autocomplete div:hover {
+            background-color: #f0f0f0;
+        }
     </style>
 </head>
 <body>
@@ -96,19 +123,37 @@
             <p id="currentNicknameDisplay" class="text-xs text-gray-500 mt-2">現在のニックネーム: <span class="font-bold text-gray-700"></span></p>
         </div>
 
+        <!-- Online Users Section -->
+        <div class="mb-4 p-3 border border-gray-200 rounded-md bg-gray-50">
+            <h3 class="text-base font-semibold text-gray-700 mb-2">オンラインユーザー:</h3>
+            <div id="onlineUsersList" class="text-sm text-gray-600 flex flex-wrap gap-x-3 gap-y-1">
+                <!-- Online users will be listed here -->
+                <p class="text-gray-500">読み込み中...</p>
+            </div>
+        </div>
+
         <div id="messages" class="border border-gray-300 p-4 h-96 overflow-y-auto mb-4 rounded-md bg-gray-50 scroll-smooth">
             <!-- Messages will be displayed here -->
         </div>
 
-        <div class="flex justify-end mb-4">
+        <div class="flex justify-between items-center mb-4">
             <button id="clearChatBtn" class="px-4 py-2 bg-red-500 text-white font-semibold rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 transition-colors duration-200 shadow-md text-sm">
                 チャットをクリア
             </button>
+            <div class="flex gap-2">
+                <button id="toggleNotificationBtn" class="px-4 py-2 bg-purple-500 text-white font-semibold rounded-md hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-colors duration-200 shadow-md text-sm">
+                    通知ON
+                </button>
+                <button id="helpBtn" class="px-4 py-2 bg-gray-500 text-white font-semibold rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors duration-200 shadow-md text-sm">
+                    ヘルプ
+                </button>
+            </div>
         </div>
 
-        <div id="message-input-container" class="flex gap-3">
+        <div id="message-input-container" class="relative flex gap-3">
             <input type="text" id="messageInput" placeholder="メモを入力..."
                    class="flex-grow p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <div id="mention-autocomplete" class="hidden"></div> <!-- Mention autocomplete -->
             <button id="sendMessageBtn"
                     class="px-5 py-3 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors duration-200 shadow-md">
                 送信
@@ -116,18 +161,11 @@
         </div>
     </div>
 
-    <!-- フェイク画面 - REMOVED -->
-    <!-- <div id="fake-screen" class="active:flex">
-        <p class="text-4xl font-bold text-gray-700 mb-4">現在の学習状況</p>
-        <p class="text-xl text-gray-600">（授業内容に関する統計データや、無害な学習アドバイスなどをここに表示）</p>
-        <p class="text-sm text-gray-500 mt-8">[Ctrl + H で戻る]</p>
-    </div> -->
-
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, getDocs, writeBatch, doc } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, getDocs, writeBatch, doc, setDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
         // Firebase 設定 - ユーザーから提供された設定を使用
         const firebaseConfig = {
@@ -155,7 +193,6 @@
         const messageInput = document.getElementById('messageInput');
         const sendMessageBtn = document.getElementById('sendMessageBtn');
         const clearChatBtn = document.getElementById('clearChatBtn');
-        // const fakeScreen = document.getElementById('fake-screen'); // REMOVED
         const appContainer = document.getElementById('app-container');
         const loadingIndicator = document.getElementById('loading-indicator');
         const userIdDisplay = document.getElementById('user-id-display');
@@ -163,6 +200,10 @@
         const nicknameInput = document.getElementById('nicknameInput');
         const setNicknameBtn = document.getElementById('setNicknameBtn');
         const currentNicknameDisplay = document.querySelector('#currentNicknameDisplay span');
+        const onlineUsersList = document.getElementById('onlineUsersList'); // New
+        const toggleNotificationBtn = document.getElementById('toggleNotificationBtn'); // New
+        const helpBtn = document.getElementById('helpBtn'); // New
+        const mentionAutocomplete = document.getElementById('mention-autocomplete'); // New
 
         // NGワードリスト
         const ngWords = ['vpn', 'プロキシ', '脱出', '監視', '管理者', 'proxy', 'escape', 'monitor', 'admin'];
@@ -170,7 +211,11 @@
 
         let userNickname = localStorage.getItem('userNickname');
         let currentUserId = null;
+        let notificationEnabled = localStorage.getItem('notificationEnabled') === 'true'; // 通知設定
+        let onlineUsers = {}; // { userId: nickname }
+        let allKnownNicknames = new Set(); // 既知のニックネームのセット
 
+        // --- ニックネーム関連 ---
         const generateAnonymousNickname = () => {
             const adjectives = ['静かな', '素早い', '賢い', '秘密の', '勇敢な', '自由な', '静寂の', '輝く', '見えない', '未来の'];
             const nouns = ['学習者', '探究者', '思索家', '記録者', '開拓者', '観察者', '案内人', '伝達者', '収集家', '知識人'];
@@ -180,7 +225,6 @@
             return `${randomAdjective}${randomNoun}${randomNumber}`;
         };
 
-        // ニックネームの初期設定と表示
         if (!userNickname) {
             userNickname = generateAnonymousNickname();
             localStorage.setItem('userNickname', userNickname);
@@ -188,7 +232,6 @@
         nicknameInput.value = userNickname;
         currentNicknameDisplay.textContent = userNickname;
 
-        // ニックネーム設定ボタンのイベントリスナー
         setNicknameBtn.addEventListener('click', () => {
             const newNickname = nicknameInput.value.trim();
             if (newNickname) {
@@ -196,11 +239,16 @@
                 localStorage.setItem('userNickname', userNickname);
                 currentNicknameDisplay.textContent = userNickname;
                 displayMessageBox(`ニックネームを「${userNickname}」に設定しました。`, "ニックネーム設定", "blue");
+                // ニックネーム変更時にオンライン状態を更新
+                if (currentUserId) {
+                    updateUserOnlineStatus(currentUserId, userNickname);
+                }
             } else {
                 displayMessageBox("ニックネームを入力してください。", "エラー", "red");
             }
         });
 
+        // --- 認証とFirestoreの初期化 ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUserId = user.uid;
@@ -209,28 +257,95 @@
                 loadingIndicator.style.display = 'none';
                 console.log("認証成功！ユーザーID:", currentUserId);
 
+                // オンライン状態の更新を開始
+                updateUserOnlineStatus(currentUserId, userNickname);
+                setInterval(() => updateUserOnlineStatus(currentUserId, userNickname), 30 * 1000); // 30秒ごとに更新
+
+                // メッセージコレクションの監視
                 const messagesCollectionRef = collection(db, `artifacts/${appId}/public/data/messages`);
                 const q = query(messagesCollectionRef, orderBy('timestamp', 'asc'));
 
-                onSnapshot(q, (snapshot) => {
-                    snapshot.docChanges().forEach((change) => {
+                onSnapshot(q, async (snapshot) => {
+                    snapshot.docChanges().forEach(async (change) => {
                         if (change.type === "added") {
                             const message = change.doc.data();
+                            const messageId = change.doc.id;
+                            
+                            // 既読状態の更新
+                            if (currentUserId && message.senderId !== currentUserId && (!message.readBy || !message.readBy.includes(currentUserId))) {
+                                try {
+                                    await updateDoc(doc(db, `artifacts/${appId}/public/data/messages`, messageId), {
+                                        readBy: arrayUnion(currentUserId)
+                                    });
+                                } catch (error) {
+                                    console.error("Error updating read status:", error);
+                                }
+                            }
+
+                            // 既知のニックネームに追加
+                            allKnownNicknames.add(message.author);
+
                             const messageElement = document.createElement('div');
                             messageElement.classList.add('message', 'mb-2', 'p-3', 'rounded-lg', 'break-words', 'relative', 'overflow-hidden');
                             messageElement.classList.add('bg-blue-100', 'text-blue-800', 'shadow-sm', 'message-enter');
+                            messageElement.dataset.docId = messageId; // 削除用にIDを保存
 
                             const timestamp = message.timestamp ? message.timestamp.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) : '送信中...';
                             
+                            // NGワードとメンションのハイライト
+                            let processedText = message.text;
+                            ngWords.forEach(word => {
+                                const regex = new RegExp(`\\b${word}\\b`, 'gi');
+                                processedText = processedText.replace(regex, ngWordReplacement.repeat(word.length));
+                            });
+
+                            // メンションのハイライト
+                            const mentionRegex = /@([^\s]+)/g;
+                            processedText = processedText.replace(mentionRegex, (match, mentionedNickname) => {
+                                if (allKnownNicknames.has(mentionedNickname)) { // 既知のニックネームのみハイライト
+                                    return `<span class="mention-highlight">@${mentionedNickname}</span>`;
+                                }
+                                return match;
+                            });
+
+                            // 既読数の表示 (送信者自身はカウントしない)
+                            const readCount = (message.readBy ? message.readBy.length : 0) - (message.senderId === currentUserId ? 1 : 0);
+                            const readStatus = readCount > 0 ? `既読 ${readCount}` : '';
+
                             messageElement.innerHTML = `
                                 <div class="font-semibold text-blue-700">${message.author}</div>
-                                <div class="text-gray-900">${message.text}</div>
-                                <div class="text-xs text-gray-500 mt-1 text-right">${timestamp}</div>
+                                <div class="text-gray-900">${processedText}</div>
+                                <div class="text-xs text-gray-500 mt-1 text-right">
+                                    ${timestamp} ${readStatus ? `<span class="ml-2 text-gray-600">${readStatus}</span>` : ''}
+                                </div>
                             `;
                             messagesDiv.appendChild(messageElement);
 
                             setTimeout(() => messageElement.classList.add('message-enter-active'), 10);
                             messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+                            // プッシュ通知
+                            if (document.hidden) { // ブラウザタブが非アクティブの場合のみ通知
+                                const isMentioned = message.mentions && message.mentions.includes(currentUserId);
+                                if (notificationEnabled || isMentioned) {
+                                    if (Notification.permission === "granted") {
+                                        new Notification(`${message.author}からのメッセージ`, {
+                                            body: message.text,
+                                            icon: 'https://placehold.co/48x48/007bff/ffffff?text=M' // 仮のアイコン
+                                        });
+                                    } else if (Notification.permission !== "denied") {
+                                        Notification.requestPermission().then(permission => {
+                                            if (permission === "granted") {
+                                                new Notification(`${message.author}からのメッセージ`, {
+                                                    body: message.text,
+                                                    icon: 'https://placehold.co/48x48/007bff/ffffff?text=M'
+                                                });
+                                            }
+                                        });
+                                    }
+                                }
+                            }
+
                         } else if (change.type === "removed") {
                             const removedMessageId = change.doc.id;
                             const messageElements = messagesDiv.children;
@@ -240,11 +355,80 @@
                                     break;
                                 }
                             }
+                        } else if (change.type === "modified") {
+                            // 既読状態の更新など、メッセージが変更された場合
+                            const modifiedMessage = change.doc.data();
+                            const modifiedMessageId = change.doc.id;
+                            const messageElement = messagesDiv.querySelector(`[data-doc-id="${modifiedMessageId}"]`);
+                            if (messageElement) {
+                                const timestamp = modifiedMessage.timestamp ? modifiedMessage.timestamp.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) : '送信中...';
+                                
+                                let processedText = modifiedMessage.text;
+                                ngWords.forEach(word => {
+                                    const regex = new RegExp(`\\b${word}\\b`, 'gi');
+                                    processedText = processedText.replace(regex, ngWordReplacement.repeat(word.length));
+                                });
+                                const mentionRegex = /@([^\s]+)/g;
+                                processedText = processedText.replace(mentionRegex, (match, mentionedNickname) => {
+                                    if (allKnownNicknames.has(mentionedNickname)) {
+                                        return `<span class="mention-highlight">@${mentionedNickname}</span>`;
+                                    }
+                                    return match;
+                                });
+
+                                const readCount = (modifiedMessage.readBy ? modifiedMessage.readBy.length : 0) - (modifiedMessage.senderId === currentUserId ? 1 : 0);
+                                const readStatus = readCount > 0 ? `既読 ${readCount}` : '';
+
+                                messageElement.innerHTML = `
+                                    <div class="font-semibold text-blue-700">${modifiedMessage.author}</div>
+                                    <div class="text-gray-900">${processedText}</div>
+                                    <div class="text-xs text-gray-500 mt-1 text-right">
+                                        ${timestamp} ${readStatus ? `<span class="ml-2 text-gray-600">${readStatus}</span>` : ''}
+                                    </div>
+                                `;
+                            }
                         }
                     });
                 }, (error) => {
                     console.error("Error getting real-time updates: ", error);
                     displayMessageBox("メッセージの取得中にエラーが発生しました。", "エラー", "red");
+                });
+
+                // オンラインユーザーコレクションの監視
+                const usersCollectionRef = collection(db, `artifacts/${appId}/public/data/users`);
+                const usersQuery = query(usersCollectionRef, orderBy('lastSeen', 'desc'));
+
+                onSnapshot(usersQuery, (snapshot) => {
+                    onlineUsers = {}; // リセット
+                    onlineUsersList.innerHTML = ''; // リストをクリア
+                    const now = Date.now();
+                    const onlineThreshold = 60 * 1000; // 60秒以内にアクティブならオンライン
+
+                    let hasOnlineUsers = false;
+                    snapshot.forEach(doc => {
+                        const userData = doc.data();
+                        if (userData.lastSeen && (now - userData.lastSeen.toDate().getTime() < onlineThreshold)) {
+                            onlineUsers[userData.userId] = userData.nickname;
+                            const userSpan = document.createElement('span');
+                            userSpan.className = 'flex items-center text-gray-700';
+                            userSpan.innerHTML = `${userData.nickname} <span class="online-indicator"></span>`;
+                            onlineUsersList.appendChild(userSpan);
+                            hasOnlineUsers = true;
+                        } else {
+                            // オフラインユーザーも表示する場合
+                            // const userSpan = document.createElement('span');
+                            // userSpan.className = 'flex items-center text-gray-500';
+                            // userSpan.innerHTML = `${userData.nickname} <span class="offline-indicator"></span>`;
+                            // onlineUsersList.appendChild(userSpan);
+                        }
+                    });
+
+                    if (!hasOnlineUsers) {
+                        onlineUsersList.innerHTML = '<p class="text-gray-500">現在オンラインのユーザーはいません。</p>';
+                    }
+                    console.log("オンラインユーザー:", onlineUsers);
+                }, (error) => {
+                    console.error("Error getting online users:", error);
                 });
 
             } else {
@@ -266,6 +450,23 @@
             }
         });
 
+        // --- オンライン状態の更新関数 ---
+        async function updateUserOnlineStatus(userId, nickname) {
+            if (!userId) return;
+            try {
+                const userDocRef = doc(db, `artifacts/${appId}/public/data/users`, userId);
+                await setDoc(userDocRef, {
+                    userId: userId,
+                    nickname: nickname,
+                    lastSeen: serverTimestamp()
+                }, { merge: true }); // 既存のフィールドは上書きせず、lastSeenのみ更新
+                // console.log("オンライン状態を更新しました。");
+            } catch (error) {
+                console.error("オンライン状態の更新に失敗しました:", error);
+            }
+        }
+
+        // --- メッセージ送信機能 ---
         sendMessageBtn.addEventListener('click', async () => {
             const messageText = messageInput.value.trim();
             if (messageText && currentUserId) {
@@ -275,12 +476,30 @@
                     maskedMessage = maskedMessage.replace(regex, ngWordReplacement.repeat(word.length));
                 });
 
+                // メンションされたユーザーIDを抽出
+                const mentionedUserIds = [];
+                const mentionRegex = /@([^\s]+)/g;
+                let match;
+                while ((match = mentionRegex.exec(messageText)) !== null) {
+                    const mentionedNickname = match[1];
+                    // 既知のニックネームからユーザーIDを逆引き (簡易的な実装)
+                    for (const userId in onlineUsers) {
+                        if (onlineUsers[userId] === mentionedNickname) {
+                            mentionedUserIds.push(userId);
+                            break;
+                        }
+                    }
+                }
+
                 try {
                     const messagesCollectionRef = collection(db, `artifacts/${appId}/public/data/messages`);
                     await addDoc(messagesCollectionRef, {
                         author: userNickname,
+                        senderId: currentUserId, // 送信者IDを追加
                         text: maskedMessage,
-                        timestamp: serverTimestamp()
+                        timestamp: serverTimestamp(),
+                        readBy: [currentUserId], // 送信者自身は既読済みとして初期化
+                        mentions: mentionedUserIds // メンションされたユーザーIDの配列
                     });
                     messageInput.value = '';
                     console.log("メッセージ送信成功！");
@@ -294,6 +513,7 @@
             }
         });
 
+        // --- チャットクリア機能 ---
         clearChatBtn.addEventListener('click', () => {
             displayConfirmBox("本当にチャット履歴をすべてクリアしますか？この操作は元に戻せません。", "チャットクリアの確認", "red", async (confirmed) => {
                 if (confirmed) {
@@ -318,28 +538,107 @@
             });
         });
 
+        // --- プッシュ通知機能 ---
+        // 通知設定ボタンの初期状態設定
+        toggleNotificationBtn.textContent = notificationEnabled ? '通知OFF' : '通知ON';
+
+        toggleNotificationBtn.addEventListener('click', () => {
+            if (Notification.permission === "default") {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        notificationEnabled = true;
+                        localStorage.setItem('notificationEnabled', 'true');
+                        toggleNotificationBtn.textContent = '通知OFF';
+                        displayMessageBox("通知が有効になりました。", "通知設定", "blue");
+                    } else {
+                        notificationEnabled = false;
+                        localStorage.setItem('notificationEnabled', 'false');
+                        toggleNotificationBtn.textContent = '通知ON';
+                        displayMessageBox("通知が拒否されました。ブラウザの設定から許可してください。", "通知設定", "red");
+                    }
+                });
+            } else if (Notification.permission === "granted") {
+                notificationEnabled = !notificationEnabled;
+                localStorage.setItem('notificationEnabled', notificationEnabled.toString());
+                toggleNotificationBtn.textContent = notificationEnabled ? '通知OFF' : '通知ON';
+                displayMessageBox(`通知が${notificationEnabled ? '有効' : '無効'}になりました。`, "通知設定", "blue");
+            } else if (Notification.permission === "denied") {
+                displayMessageBox("通知が拒否されています。ブラウザの設定から許可してください。", "通知設定", "red");
+            }
+        });
+
+        // --- ヘルプ機能 ---
+        helpBtn.addEventListener('click', () => {
+            const helpMessage = `
+                <p class="mb-2">このアプリは、学習メモ共有ツールとして設計されています。</p>
+                <ul class="list-disc list-inside mb-4">
+                    <li><strong>メッセージ送信:</strong> 下の入力欄にメモを入力し、「送信」ボタンをクリックします。</li>
+                    <li><strong>ニックネーム設定:</strong> 上部の入力欄に好きなニックネームを入力し、「設定」ボタンをクリックします。設定しない場合は自動で匿名ニックネームが割り振られます。</li>
+                    <li><strong>チャットクリア:</strong> 「チャットをクリア」ボタンで、すべてのメッセージを削除できます。（元に戻せません）</li>
+                    <li><strong>メンション:</strong> メッセージ内で「@ニックネーム」と入力すると、特定のユーザーにメンションできます。メンションされたメッセージはハイライト表示されます。</li>
+                    <li><strong>オンラインユーザー:</strong> 「オンラインユーザー」欄で、現在アクティブなユーザーを確認できます。</li>
+                    <li><strong>既読機能:</strong> メッセージの右下に「既読 X」と表示され、メッセージを読んだユーザーの数がわかります。（送信者自身はカウントされません）</li>
+                    <li><strong>通知機能:</strong> 「通知ON/OFF」ボタンで、新しいメッセージが届いた際のブラウザ通知を切り替えられます。通知OFFでもメンションされた場合は通知されます。</li>
+                    <li><strong>NGワード:</strong> 特定のキーワードは自動的に「🍙」にマスクされます。</li>
+                </ul>
+                <p class="text-sm text-gray-600">※ このアプリは実験的なツールであり、セキュリティ上の完全な保証はありません。利用は自己責任でお願いします。</p>
+            `;
+            displayMessageBox(helpMessage, "使い方（ヘルプ）", "blue");
+        });
+
+        // --- その他のイベントリスナー ---
         messageInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 sendMessageBtn.click();
             }
         });
 
-        // Ctrl+Hの機能は削除されました。
-        /*
-        document.addEventListener('keydown', (event) => {
-            if (event.ctrlKey && event.key === 'h') {
-                event.preventDefault();
-                if (fakeScreen.classList.contains('active')) {
-                    fakeScreen.classList.remove('active');
-                    appContainer.style.display = 'block';
+        // --- メンションオートコンプリート機能 ---
+        messageInput.addEventListener('input', () => {
+            const text = messageInput.value;
+            const lastAtIndex = text.lastIndexOf('@');
+
+            if (lastAtIndex !== -1 && text.substring(lastAtIndex).includes(' ')) {
+                // @ の後にスペースが入ったらオートコンプリートを非表示
+                mentionAutocomplete.classList.add('hidden');
+                return;
+            }
+
+            if (lastAtIndex !== -1) {
+                const searchTerm = text.substring(lastAtIndex + 1);
+                const filteredNicknames = Array.from(allKnownNicknames).filter(nickname =>
+                    nickname.toLowerCase().startsWith(searchTerm.toLowerCase()) && nickname !== userNickname
+                );
+
+                mentionAutocomplete.innerHTML = '';
+                if (filteredNicknames.length > 0) {
+                    filteredNicknames.forEach(nickname => {
+                        const div = document.createElement('div');
+                        div.textContent = nickname;
+                        div.addEventListener('click', () => {
+                            messageInput.value = text.substring(0, lastAtIndex) + `@${nickname} `;
+                            mentionAutocomplete.classList.add('hidden');
+                            messageInput.focus();
+                        });
+                        mentionAutocomplete.appendChild(div);
+                    });
+                    mentionAutocomplete.classList.remove('hidden');
                 } else {
-                    fakeScreen.classList.add('active');
-                    appContainer.style.display = 'none';
+                    mentionAutocomplete.classList.add('hidden');
                 }
+            } else {
+                mentionAutocomplete.classList.add('hidden');
             }
         });
-        */
 
+        // 入力フィールド以外をクリックしたらオートコンプリートを隠す
+        document.addEventListener('click', (event) => {
+            if (!messageInput.contains(event.target) && !mentionAutocomplete.contains(event.target)) {
+                mentionAutocomplete.classList.add('hidden');
+            }
+        });
+
+        // --- カスタムダイアログ関数 ---
         function displayMessageBox(message, title = "通知", type = "blue") {
             const existingBox = document.getElementById('custom-message-box');
             if (existingBox) existingBox.remove();
