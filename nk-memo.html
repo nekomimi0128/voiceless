@@ -102,7 +102,7 @@
         }
         body.dark-mode .mention-highlight {
             background-color: #6b46c1; /* Darker purple for highlight */
-            color: #f6e05e; /* ★修正: メンションテキストの色を明るい黄色に★ */
+            color: #f6e05e; /* メンションテキストの色を明るい黄色に */
         }
         body.dark-mode .online-indicator {
             background-color: #48bb78; /* Brighter green for dark mode */
@@ -363,7 +363,7 @@
 
         // NGワードリスト
         const ngWords = ['vpn', 'プロキシ', '脱出', '監視', '管理者', 'proxy', 'escape', 'monitor', 'admin'];
-        const ngWordReplacement = '�';
+        const ngWordReplacement = '🍙';
 
         let userNickname = localStorage.getItem('userNickname');
         let currentUserId = null;
@@ -474,7 +474,12 @@
                                 }
                             }
 
-                            allKnownNicknames.add(message.author);
+                            // メッセージの作者をallKnownNicknamesに追加
+                            if (message.author) {
+                                allKnownNicknames.add(message.author);
+                                console.log(`Added "${message.author}" to allKnownNicknames from message. Current allKnownNicknames:`, Array.from(allKnownNicknames));
+                            }
+
 
                             const messageElement = document.createElement('div');
                             messageElement.classList.add('message', 'mb-2', 'p-3', 'rounded-lg', 'break-words', 'relative', 'overflow-hidden');
@@ -599,7 +604,11 @@
                             userSpan.innerHTML = `${userData.nickname} <span class="online-indicator"></span>`;
                             onlineUsersList.appendChild(userSpan);
                             hasOnlineUsers = true;
-                            allKnownNicknames.add(userData.nickname);
+                            // オンラインユーザーのニックネームをallKnownNicknamesに追加
+                            if (userData.nickname) {
+                                allKnownNicknames.add(userData.nickname);
+                                console.log(`Added "${userData.nickname}" to allKnownNicknames from online users. Current allKnownNicknames:`, Array.from(allKnownNicknames));
+                            }
                         }
                     });
 
@@ -791,6 +800,7 @@
             console.log("--- メンションオートコンプリートデバッグ ---");
             console.log("Current messageInput value:", text);
             console.log("Last '@' index:", lastAtIndex);
+            console.log("allKnownNicknames content at input:", Array.from(allKnownNicknames)); // 入力時のallKnownNicknamesの内容
 
             if (lastAtIndex !== -1 && text.substring(lastAtIndex).includes(' ')) {
                 console.log("Space detected after @, hiding autocomplete.");
@@ -801,7 +811,6 @@
             if (lastAtIndex !== -1) {
                 const searchTerm = text.substring(lastAtIndex + 1);
                 console.log("Search term for mention:", searchTerm);
-                console.log("All known nicknames (before filter):", Array.from(allKnownNicknames)); // allKnownNicknamesの内容を確認
 
                 const filteredNicknames = Array.from(allKnownNicknames).filter(nickname =>
                     nickname.toLowerCase().startsWith(searchTerm.toLowerCase()) && nickname !== userNickname
