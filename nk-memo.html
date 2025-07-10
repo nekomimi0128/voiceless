@@ -452,10 +452,39 @@
                 stopLoadingAnimation(); // 認証成功でローディング停止
                 console.log("認証成功！ユーザーID:", currentUserId);
 
+                // --- Initial population of allKnownNicknames from existing messages and users ---
+                const messagesCollectionRef = collection(db, `artifacts/${appId}/public/data/messages`);
+                const usersCollectionRef = collection(db, `artifacts/${appId}/public/data/users`);
+
+                try {
+                    const messageDocs = await getDocs(messagesCollectionRef);
+                    messageDocs.forEach(doc => {
+                        const message = doc.data();
+                        if (message.author) {
+                            allKnownNicknames.add(message.author);
+                        }
+                    });
+                    console.log("allKnownNicknames populated from historical messages:", Array.from(allKnownNicknames));
+
+                    const userDocs = await getDocs(usersCollectionRef);
+                    userDocs.forEach(doc => {
+                        const userData = doc.data();
+                        if (userData.nickname) {
+                            allKnownNicknames.add(userData.nickname);
+                        }
+                    });
+                    console.log("allKnownNicknames further populated from historical users:", Array.from(allKnownNicknames));
+
+                } catch (error) {
+                    console.error("Error populating allKnownNicknames on initial load:", error);
+                    displayMessageBox("過去のニックネーム情報の読み込みに失敗しました。", "エラー", "red");
+                }
+                // --- End of initial population ---
+
+
                 updateUserOnlineStatus(currentUserId, userNickname);
                 setInterval(() => updateUserOnlineStatus(currentUserId, userNickname), 30 * 1000);
 
-                const messagesCollectionRef = collection(db, `artifacts/${appId}/public/data/messages`);
                 const q = query(messagesCollectionRef, orderBy('timestamp', 'asc'));
 
                 onSnapshot(q, async (snapshot) => {
@@ -585,7 +614,6 @@
                     displayMessageBox("メッセージの取得中にエラーが発生しました。", "エラー", "red");
                 });
 
-                const usersCollectionRef = collection(db, `artifacts/${appId}/public/data/users`);
                 const usersQuery = query(usersCollectionRef, orderBy('lastSeen', 'desc'));
 
                 onSnapshot(usersQuery, (snapshot) => {
@@ -673,6 +701,12 @@
                 let match;
                 while ((match = mentionRegex.exec(messageText)) !== null) {
                     const mentionedNickname = match[1];
+                    // allKnownNicknamesからユーザーIDを逆引きする必要があるが、
+                    // 現在のonlineUsersにはuserIdとnicknameのマッピングがあるが、
+                    // allKnownNicknamesはSet<nickname>のため、直接userIdを取得できない。
+                    // ここは、onlineUsersからのみメンション対象を検索するか、
+                    // ユーザーIDとニックネームの永続的なマッピングをどこかに保持する必要がある。
+                    // 一旦、オンラインユーザーのみを対象とする。
                     for (const userId in onlineUsers) {
                         if (onlineUsers[userId] === mentionedNickname) {
                             mentionedUserIds.push(userId);
@@ -812,6 +846,7 @@
                 const searchTerm = text.substring(lastAtIndex + 1);
                 console.log("Search term for mention:", searchTerm);
 
+                // userNicknameはallKnownNicknamesに常に含まれているはずなので、除外してフィルタリング
                 const filteredNicknames = Array.from(allKnownNicknames).filter(nickname =>
                     nickname.toLowerCase().startsWith(searchTerm.toLowerCase()) && nickname !== userNickname
                 );
