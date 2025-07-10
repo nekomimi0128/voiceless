@@ -181,7 +181,7 @@
         // アプリケーションID (Canvas環境から提供されるグローバル変数)
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         // Firebase初期化トークン (Canvas環境から提供されるグローバル変数)
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; // 削除
 
         // Firebase 初期化
         const app = initializeApp(firebaseConfig);
@@ -200,10 +200,10 @@
         const nicknameInput = document.getElementById('nicknameInput');
         const setNicknameBtn = document.getElementById('setNicknameBtn');
         const currentNicknameDisplay = document.querySelector('#currentNicknameDisplay span');
-        const onlineUsersList = document.getElementById('onlineUsersList'); // New
-        const toggleNotificationBtn = document.getElementById('toggleNotificationBtn'); // New
-        const helpBtn = document.getElementById('helpBtn'); // New
-        const mentionAutocomplete = document.getElementById('mention-autocomplete'); // New
+        const onlineUsersList = document.getElementById('onlineUsersList');
+        const toggleNotificationBtn = document.getElementById('toggleNotificationBtn');
+        const helpBtn = document.getElementById('helpBtn');
+        const mentionAutocomplete = document.getElementById('mention-autocomplete');
 
         // NGワードリスト
         const ngWords = ['vpn', 'プロキシ', '脱出', '監視', '管理者', 'proxy', 'escape', 'monitor', 'admin'];
@@ -211,9 +211,9 @@
 
         let userNickname = localStorage.getItem('userNickname');
         let currentUserId = null;
-        let notificationEnabled = localStorage.getItem('notificationEnabled') === 'true'; // 通知設定
-        let onlineUsers = {}; // { userId: nickname }
-        let allKnownNicknames = new Set(); // 既知のニックネームのセット
+        let notificationEnabled = localStorage.getItem('notificationEnabled') === 'true';
+        let onlineUsers = {};
+        let allKnownNicknames = new Set();
 
         // --- ニックネーム関連 ---
         const generateAnonymousNickname = () => {
@@ -239,7 +239,6 @@
                 localStorage.setItem('userNickname', userNickname);
                 currentNicknameDisplay.textContent = userNickname;
                 displayMessageBox(`ニックネームを「${userNickname}」に設定しました。`, "ニックネーム設定", "blue");
-                // ニックネーム変更時にオンライン状態を更新
                 if (currentUserId) {
                     updateUserOnlineStatus(currentUserId, userNickname);
                 }
@@ -257,11 +256,9 @@
                 loadingIndicator.style.display = 'none';
                 console.log("認証成功！ユーザーID:", currentUserId);
 
-                // オンライン状態の更新を開始
                 updateUserOnlineStatus(currentUserId, userNickname);
-                setInterval(() => updateUserOnlineStatus(currentUserId, userNickname), 30 * 1000); // 30秒ごとに更新
+                setInterval(() => updateUserOnlineStatus(currentUserId, userNickname), 30 * 1000);
 
-                // メッセージコレクションの監視
                 const messagesCollectionRef = collection(db, `artifacts/${appId}/public/data/messages`);
                 const q = query(messagesCollectionRef, orderBy('timestamp', 'asc'));
 
@@ -271,7 +268,6 @@
                             const message = change.doc.data();
                             const messageId = change.doc.id;
                             
-                            // 既読状態の更新
                             if (currentUserId && message.senderId !== currentUserId && (!message.readBy || !message.readBy.includes(currentUserId))) {
                                 try {
                                     await updateDoc(doc(db, `artifacts/${appId}/public/data/messages`, messageId), {
@@ -282,33 +278,29 @@
                                 }
                             }
 
-                            // 既知のニックネームに追加
                             allKnownNicknames.add(message.author);
 
                             const messageElement = document.createElement('div');
                             messageElement.classList.add('message', 'mb-2', 'p-3', 'rounded-lg', 'break-words', 'relative', 'overflow-hidden');
                             messageElement.classList.add('bg-blue-100', 'text-blue-800', 'shadow-sm', 'message-enter');
-                            messageElement.dataset.docId = messageId; // 削除用にIDを保存
+                            messageElement.dataset.docId = messageId;
 
                             const timestamp = message.timestamp ? message.timestamp.toDate().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }) : '送信中...';
                             
-                            // NGワードとメンションのハイライト
                             let processedText = message.text;
                             ngWords.forEach(word => {
                                 const regex = new RegExp(`\\b${word}\\b`, 'gi');
                                 processedText = processedText.replace(regex, ngWordReplacement.repeat(word.length));
                             });
 
-                            // メンションのハイライト
                             const mentionRegex = /@([^\s]+)/g;
                             processedText = processedText.replace(mentionRegex, (match, mentionedNickname) => {
-                                if (allKnownNicknames.has(mentionedNickname)) { // 既知のニックネームのみハイライト
+                                if (allKnownNicknames.has(mentionedNickname)) {
                                     return `<span class="mention-highlight">@${mentionedNickname}</span>`;
                                 }
                                 return match;
                             });
 
-                            // 既読数の表示 (送信者自身はカウントしない)
                             const readCount = (message.readBy ? message.readBy.length : 0) - (message.senderId === currentUserId ? 1 : 0);
                             const readStatus = readCount > 0 ? `既読 ${readCount}` : '';
 
@@ -324,14 +316,13 @@
                             setTimeout(() => messageElement.classList.add('message-enter-active'), 10);
                             messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-                            // プッシュ通知
-                            if (document.hidden) { // ブラウザタブが非アクティブの場合のみ通知
+                            if (document.hidden) {
                                 const isMentioned = message.mentions && message.mentions.includes(currentUserId);
                                 if (notificationEnabled || isMentioned) {
                                     if (Notification.permission === "granted") {
                                         new Notification(`${message.author}からのメッセージ`, {
                                             body: message.text,
-                                            icon: 'https://placehold.co/48x48/007bff/ffffff?text=M' // 仮のアイコン
+                                            icon: 'https://placehold.co/48x48/007bff/ffffff?text=M'
                                         });
                                     } else if (Notification.permission !== "denied") {
                                         Notification.requestPermission().then(permission => {
@@ -356,7 +347,6 @@
                                 }
                             }
                         } else if (change.type === "modified") {
-                            // 既読状態の更新など、メッセージが変更された場合
                             const modifiedMessage = change.doc.data();
                             const modifiedMessageId = change.doc.id;
                             const messageElement = messagesDiv.querySelector(`[data-doc-id="${modifiedMessageId}"]`);
@@ -394,15 +384,14 @@
                     displayMessageBox("メッセージの取得中にエラーが発生しました。", "エラー", "red");
                 });
 
-                // オンラインユーザーコレクションの監視
                 const usersCollectionRef = collection(db, `artifacts/${appId}/public/data/users`);
                 const usersQuery = query(usersCollectionRef, orderBy('lastSeen', 'desc'));
 
                 onSnapshot(usersQuery, (snapshot) => {
-                    onlineUsers = {}; // リセット
-                    onlineUsersList.innerHTML = ''; // リストをクリア
+                    onlineUsers = {};
+                    onlineUsersList.innerHTML = '';
                     const now = Date.now();
-                    const onlineThreshold = 60 * 1000; // 60秒以内にアクティブならオンライン
+                    const onlineThreshold = 60 * 1000;
 
                     let hasOnlineUsers = false;
                     snapshot.forEach(doc => {
@@ -414,12 +403,6 @@
                             userSpan.innerHTML = `${userData.nickname} <span class="online-indicator"></span>`;
                             onlineUsersList.appendChild(userSpan);
                             hasOnlineUsers = true;
-                        } else {
-                            // オフラインユーザーも表示する場合
-                            // const userSpan = document.createElement('span');
-                            // userSpan.className = 'flex items-center text-gray-500';
-                            // userSpan.innerHTML = `${userData.nickname} <span class="offline-indicator"></span>`;
-                            // onlineUsersList.appendChild(userSpan);
                         }
                     });
 
@@ -435,22 +418,17 @@
                 loadingIndicator.style.display = 'block';
                 console.log("認証試行中...");
                 try {
-                    if (initialAuthToken) {
-                        await signInWithCustomToken(auth, initialAuthToken);
-                        console.log("カスタムトークンで認証を試みました。");
-                    } else {
-                        await signInAnonymously(auth);
-                        console.log("匿名認証を試みました。");
-                    }
+                    // 匿名認証を試みる (「だれでもでいいぞ」の要件に合致)
+                    await signInAnonymously(auth);
+                    console.log("匿名認証を試みました。");
                 } catch (error) {
-                    console.error("Error during authentication: ", error);
+                    console.error("認証に失敗しました:", error); // エラーメッセージをより汎用的に
                     displayMessageBox("認証に失敗しました。アプリをリロードしてください。", "エラー", "red");
                     loadingIndicator.style.display = 'none';
                 }
             }
         });
 
-        // --- オンライン状態の更新関数 ---
         async function updateUserOnlineStatus(userId, nickname) {
             if (!userId) return;
             try {
@@ -459,14 +437,12 @@
                     userId: userId,
                     nickname: nickname,
                     lastSeen: serverTimestamp()
-                }, { merge: true }); // 既存のフィールドは上書きせず、lastSeenのみ更新
-                // console.log("オンライン状態を更新しました。");
+                }, { merge: true });
             } catch (error) {
                 console.error("オンライン状態の更新に失敗しました:", error);
             }
         }
 
-        // --- メッセージ送信機能 ---
         sendMessageBtn.addEventListener('click', async () => {
             const messageText = messageInput.value.trim();
             if (messageText && currentUserId) {
@@ -476,13 +452,11 @@
                     maskedMessage = maskedMessage.replace(regex, ngWordReplacement.repeat(word.length));
                 });
 
-                // メンションされたユーザーIDを抽出
                 const mentionedUserIds = [];
                 const mentionRegex = /@([^\s]+)/g;
                 let match;
                 while ((match = mentionRegex.exec(messageText)) !== null) {
                     const mentionedNickname = match[1];
-                    // 既知のニックネームからユーザーIDを逆引き (簡易的な実装)
                     for (const userId in onlineUsers) {
                         if (onlineUsers[userId] === mentionedNickname) {
                             mentionedUserIds.push(userId);
@@ -495,11 +469,11 @@
                     const messagesCollectionRef = collection(db, `artifacts/${appId}/public/data/messages`);
                     await addDoc(messagesCollectionRef, {
                         author: userNickname,
-                        senderId: currentUserId, // 送信者IDを追加
+                        senderId: currentUserId,
                         text: maskedMessage,
                         timestamp: serverTimestamp(),
-                        readBy: [currentUserId], // 送信者自身は既読済みとして初期化
-                        mentions: mentionedUserIds // メンションされたユーザーIDの配列
+                        readBy: [currentUserId],
+                        mentions: mentionedUserIds
                     });
                     messageInput.value = '';
                     console.log("メッセージ送信成功！");
@@ -513,7 +487,6 @@
             }
         });
 
-        // --- チャットクリア機能 ---
         clearChatBtn.addEventListener('click', () => {
             displayConfirmBox("本当にチャット履歴をすべてクリアしますか？この操作は元に戻せません。", "チャットクリアの確認", "red", async (confirmed) => {
                 if (confirmed) {
@@ -538,8 +511,6 @@
             });
         });
 
-        // --- プッシュ通知機能 ---
-        // 通知設定ボタンの初期状態設定
         toggleNotificationBtn.textContent = notificationEnabled ? '通知OFF' : '通知ON';
 
         toggleNotificationBtn.addEventListener('click', () => {
@@ -567,7 +538,6 @@
             }
         });
 
-        // --- ヘルプ機能 ---
         helpBtn.addEventListener('click', () => {
             const helpMessage = `
                 <p class="mb-2">このアプリは、学習メモ共有ツールとして設計されています。</p>
@@ -586,20 +556,17 @@
             displayMessageBox(helpMessage, "使い方（ヘルプ）", "blue");
         });
 
-        // --- その他のイベントリスナー ---
         messageInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 sendMessageBtn.click();
             }
         });
 
-        // --- メンションオートコンプリート機能 ---
         messageInput.addEventListener('input', () => {
             const text = messageInput.value;
             const lastAtIndex = text.lastIndexOf('@');
 
             if (lastAtIndex !== -1 && text.substring(lastAtIndex).includes(' ')) {
-                // @ の後にスペースが入ったらオートコンプリートを非表示
                 mentionAutocomplete.classList.add('hidden');
                 return;
             }
@@ -631,14 +598,13 @@
             }
         });
 
-        // 入力フィールド以外をクリックしたらオートコンプリートを隠す
         document.addEventListener('click', (event) => {
             if (!messageInput.contains(event.target) && !mentionAutocomplete.contains(event.target)) {
                 mentionAutocomplete.classList.add('hidden');
             }
         });
 
-        // --- カスタムダイアログ関数 ---
+        // カスタムメッセージボックス表示関数 (alertの代替)
         function displayMessageBox(message, title = "通知", type = "blue") {
             const existingBox = document.getElementById('custom-message-box');
             if (existingBox) existingBox.remove();
@@ -649,7 +615,7 @@
             box.innerHTML = `
                 <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full mx-4 border-t-4 ${type === 'red' ? 'border-red-500' : type === 'yellow' ? 'border-yellow-500' : 'border-blue-500'}">
                     <h3 class="text-lg font-bold mb-3 ${type === 'red' ? 'text-red-700' : type === 'yellow' ? 'text-yellow-700' : 'text-blue-700'}">${title}</h3>
-                    <p class="text-gray-700 mb-4">${message}</p>
+                    <div class="text-gray-700 mb-4 max-h-96 overflow-y-auto">${message}</div>
                     <button id="message-box-ok-btn" class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400">OK</button>
                 </div>
             `;
@@ -660,6 +626,7 @@
             });
         }
 
+        // カスタム確認ボックス表示関数 (confirmの代替)
         function displayConfirmBox(message, title = "確認", type = "blue", callback) {
             const existingBox = document.getElementById('custom-confirm-box');
             if (existingBox) existingBox.remove();
