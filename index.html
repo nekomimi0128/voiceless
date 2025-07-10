@@ -78,7 +78,8 @@
             <!-- チャットセクション -->
             <div id="chat-section" class="hidden flex flex-col max-h-[calc(100vh-150px)]">
                 <div class="text-center text-gray-600 text-md mb-4 p-2 bg-blue-50 rounded-xl">
-                    <p id="chat-intro-message">今、感じていることを教えてください。</p>
+                    <p id="chat-intro-message">こんにちは。あなたの声がここに届くのを、静かに待っていました。―さあ、あなたの名前（ニックネームでも）を教えてください。何があったかも、教えていただけると嬉しいです。</p>
+<p>さあ、あなたの声を吐き出してください。</p>
                 </div>
                 <div id="messages" class="flex-grow overflow-y-auto custom-scrollbar p-4 space-y-4 bg-gray-50 rounded-xl mb-4 border border-gray-200">
                     <!-- メッセージがここに表示されます -->
@@ -257,35 +258,82 @@
         // Firebase認証状態の監視
         console.log('onAuthStateChangedリスナーを設定中...');
         onAuthStateChanged(auth, async (user) => {
-            console.log('onAuthStateChangedがトリガーされました。');
-            loadingOverlay.classList.add('hidden'); // Hide loading overlay once auth state is known
+            console.log('onAuthStateChangedがトリガーされました。ユーザー:', user ? user.uid : 'なし');
+
+            console.log('ローディングオーバーレイ要素:', loadingOverlay); // 要素の存在を確認
+            console.log('イントロセクション要素:', introSection); // 要素の存在を確認
+
+            // ローディングオーバーレイを隠す
+            if (loadingOverlay) {
+                loadingOverlay.classList.add('hidden');
+                loadingOverlay.style.display = 'none'; // 強制的にdisplayをnoneに設定
+                console.log('ローディングオーバーレイを非表示にしました。');
+                console.log('ローディングオーバーレイのクラスリスト（非表示後）:', loadingOverlay.classList.value);
+                console.log('ローディングオーバーレイのdisplayスタイル:', loadingOverlay.style.display);
+            } else {
+                console.error('エラー: loadingOverlay要素が見つかりません。');
+            }
 
             if (user) {
                 userId = user.uid;
                 console.log('Firebase認証済み:', userId);
-                introSection.classList.remove('hidden'); // Show intro section after auth
+                // トップページを表示する
+                if (introSection) {
+                    introSection.classList.remove('hidden');
+                    introSection.style.display = 'block'; // 強制的にdisplayをblockに設定
+                    console.log('トップページを表示しました。');
+                    console.log('トップページのクラスリスト（表示後）:', introSection.classList.value);
+                    console.log('トップページのdisplayスタイル:', introSection.style.display);
+                } else {
+                    console.error('エラー: introSection要素が見つかりません。');
+                }
+                // 認証成功後、チャット開始ボタンがクリック可能であることを確認
+                if (startChatButton) startChatButton.disabled = false;
+                if (showNotesButton) showNotesButton.disabled = false;
+                console.log('チャット開始ボタンと利用時の注意ボタンを有効化しました。');
             } else {
                 console.log('Firebase認証なし、匿名認証を試行中...');
                 try {
                     const userCredential = await signInAnonymously(auth);
                     userId = userCredential.user.uid;
                     console.log('匿名認証成功:', userId);
-                    introSection.classList.remove('hidden'); // Show intro section after successful anonymous auth
+                    // トップページを表示する
+                    if (introSection) {
+                        introSection.classList.remove('hidden');
+                        introSection.style.display = 'block'; // 強制的にdisplayをblockに設定
+                        console.log('トップページを表示しました。');
+                        console.log('トップページのクラスリスト（表示後）:', introSection.classList.value);
+                        console.log('トップページのdisplayスタイル:', introSection.style.display);
+                    } else {
+                        console.error('エラー: introSection要素が見つかりません。');
+                    }
+                    // 認証成功後、チャット開始ボタンがクリック可能であることを確認
+                    if (startChatButton) startChatButton.disabled = false;
+                    if (showNotesButton) showNotesButton.disabled = false;
+                    console.log('チャット開始ボタンと利用時の注意ボタンを有効化しました。');
                 } catch (error) {
                     console.error('匿名認証エラー:', error);
                     appShowCustomModal('認証に失敗しました。ページをリロードしてください。');
-                    // If auth fails, keep loading overlay hidden but don't show intro section
-                    // Or show an error message prominently.
+                    // 認証失敗時は、ボタンを無効化しておく
+                    if (startChatButton) startChatButton.disabled = true;
+                    if (showNotesButton) showNotesButton.disabled = true;
                 }
             }
         });
         console.log('onAuthStateChangedリスナーの設定が完了しました。');
 
-        // ★追加: フォールバックとして、5秒後にローディングオーバーレイを非表示にする
+        // フォールバックとして、5秒後にローディングオーバーレイを非表示にする
         setTimeout(() => {
-            if (!userId && !introSection.classList.contains('hidden')) { // userIdがまだ設定されておらず、かつintroSectionが表示されていない場合
+            if (loadingOverlay && !loadingOverlay.classList.contains('hidden')) {
+                console.warn('5秒経過してもローディングオーバーレイが非表示になりませんでした。強制的に非表示にします。');
                 loadingOverlay.classList.add('hidden');
-                appShowCustomModal('認証に時間がかかっています。ネットワーク接続を確認するか、ページをリロードしてください。');
+                loadingOverlay.style.display = 'none'; // 強制的にdisplayをnoneに設定
+                if (introSection && introSection.classList.contains('hidden')) {
+                    console.warn('ローディング強制非表示後もトップページが非表示です。強制的に表示します。');
+                    introSection.classList.remove('hidden');
+                    introSection.style.display = 'block'; // 強制的にdisplayをblockに設定
+                    appShowCustomModal('認証に時間がかかっています。ネットワーク接続を確認するか、ページをリロードしてください。');
+                }
             }
         }, 5000); // 5秒後に実行
 
