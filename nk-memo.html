@@ -102,7 +102,7 @@
         }
         body.dark-mode .mention-highlight {
             background-color: #6b46c1; /* Darker purple for highlight */
-            color: #e2e8f0;
+            color: #f6e05e; /* ★修正: メンションテキストの色を明るい黄色に★ */
         }
         body.dark-mode .online-indicator {
             background-color: #48bb78; /* Brighter green for dark mode */
@@ -154,10 +154,7 @@
             padding: 2px 4px;
             border-radius: 4px;
             font-weight: bold;
-        }
-        body.dark-mode .mention-highlight {
-            background-color: #6b46c1; /* Darker purple for dark mode */
-            color: #e2e8f0;
+            /* Light mode: color inherits from parent (text-gray-900 which is #333) */
         }
 
 
@@ -366,7 +363,7 @@
 
         // NGワードリスト
         const ngWords = ['vpn', 'プロキシ', '脱出', '監視', '管理者', 'proxy', 'escape', 'monitor', 'admin'];
-        const ngWordReplacement = '🍙';
+        const ngWordReplacement = '�';
 
         let userNickname = localStorage.getItem('userNickname');
         let currentUserId = null;
@@ -615,6 +612,9 @@
                     // 権限エラーの場合、ユーザーに通知
                     if (error.code === 'permission-denied') {
                         displayMessageBox("オンラインユーザー情報の取得に権限エラーが発生しました。Firebaseのセキュリティルールを確認してください。", "エラー", "red");
+                        onlineUsersList.innerHTML = '<p class="text-red-500">オンラインユーザー情報の読み込みに失敗しました。権限エラーの可能性があります。</p>'; // Visual cue for permission error
+                    } else {
+                        displayMessageBox("オンラインユーザーの取得中にエラーが発生しました。", "エラー", "red");
                     }
                 });
 
@@ -891,3 +891,4 @@
     </script>
 </body>
 </html>
+�
