@@ -204,7 +204,7 @@
         const customModal = document.getElementById('custom-modal');
         const modalMessage = document.getElementById('modal-message');
         const modalOkButton = document.getElementById('modal-ok-button');
-        const modalCancelButton = document.getElementById('modal-cancel-button'); // ★修正箇所
+        const modalCancelButton = document.getElementById('modal-cancel-button');
 
         // Loading overlay element
         const loadingOverlay = document.getElementById('loading-overlay'); // Get reference to the new overlay
@@ -215,7 +215,7 @@
          * @param {Function} onOk - OKボタンが押されたときのコールバック (オプション)
          * @param {boolean} isConfirm - 確認ダイアログとして表示するか (オプション、デフォルトはfalse)
          */
-        function showCustomModal(message, onOk = () => {}, isConfirm = false) {
+        function appShowCustomModal(message, onOk = () => {}, isConfirm = false) { // ★関数名を変更
             modalMessage.textContent = message;
             modalOkButton.onclick = () => {
                 customModal.classList.add('hidden');
@@ -273,7 +273,7 @@
                     introSection.classList.remove('hidden'); // Show intro section after successful anonymous auth
                 } catch (error) {
                     console.error('匿名認証エラー:', error);
-                    showCustomModal('認証に失敗しました。ページをリロードしてください。');
+                    appShowCustomModal('認証に失敗しました。ページをリロードしてください。'); // ★関数名を変更
                     // If auth fails, keep loading overlay hidden but don't show intro section
                     // Or show an error message prominently.
                 }
@@ -289,7 +289,7 @@
             if (!userId) {
                 console.warn('ユーザーIDがまだ利用できません。認証を待機します。');
                 // This scenario should be less likely with the loading overlay, but good to keep the check.
-                showCustomModal('認証が完了していません。しばらく待ってからもう一度お試しください。');
+                appShowCustomModal('認証が完了していません。しばらく待ってからもう一度お試しください。'); // ★関数名を変更
                 loadingIndicator.classList.add('hidden');
                 return;
             }
@@ -327,7 +327,7 @@
                 }
             } catch (error) {
                 console.error('チャットセッションの初期化エラー:', error);
-                showCustomModal('チャットの開始に失敗しました。');
+                appShowCustomModal('チャットの開始に失敗しました。'); // ★関数名を変更
                 loadingIndicator.classList.add('hidden');
             }
         }
@@ -375,7 +375,7 @@
                 }
             }, (error) => {
                 console.error('チャットの購読エラー:', error);
-                showCustomModal('チャットの読み込み中にエラーが発生しました。');
+                appShowCustomModal('チャットの読み込み中にエラーが発生しました。'); // ★関数名を変更
                 loadingIndicator.classList.add('hidden');
             });
         }
@@ -461,7 +461,7 @@
             sendButton.disabled = true; // 送信ボタンを無効化
             noCounselorMessage.classList.add('hidden'); // 待機メッセージを非表示
             messagesDiv.innerHTML = ''; // 履歴をクリア
-            showCustomModal('チャットが終了しました。新しい相談を開始するには、トップページに戻って「相談を始める」ボタンを押してください。');
+            appShowCustomModal('チャットが終了しました。新しい相談を開始するには、トップページに戻って「相談を始める」ボタンを押してください。'); // ★関数名を変更
         }
 
         // メッセージ送信
@@ -509,11 +509,11 @@
                     messageInput.value = ''; // Clear input field
                 } else {
                     console.error('Chat document not found.');
-                    showCustomModal('チャットセッションが見つかりません。再開してください。');
+                    appShowCustomModal('チャットセッションが見つかりません。再開してください。'); // ★関数名を変更
                 }
             } catch (error) {
                 console.error('Error sending message:', error);
-                showCustomModal('メッセージの送信に失敗しました。');
+                appShowCustomModal('メッセージの送信に失敗しました。'); // ★関数名を変更
             }
         }
 
@@ -523,7 +523,7 @@
          * @param {Function} onOk - Callback when OK button is pressed (optional)
          * @param {boolean} isConfirm - Whether to display as a confirmation dialog (optional, default false)
          */
-        function showCustomModal(message, onOk = () => {}, isConfirm = false) {
+        function appShowCustomModal(message, onOk = () => {}, isConfirm = false) { // ★関数名を変更
             modalMessage.textContent = message;
             modalOkButton.onclick = () => {
                 customModal.classList.add('hidden');
@@ -572,5 +572,3 @@
     </script>
 </body>
 </html>
-```
-I made some changes. `modalCancelButton` の宣言で発生していた構文エラーを修正しました。これにより、`showCustomModal` 関数が二重に宣言される問題が解消され、ボタンが正しく機能するようになるはず
