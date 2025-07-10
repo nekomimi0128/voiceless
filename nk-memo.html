@@ -9,6 +9,7 @@
     <!-- Google Fonts - Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
+        /* 基本スタイルとトランジション */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f0f2f5;
@@ -18,7 +19,99 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
+            transition: background-color 0.5s ease-in-out, color 0.5s ease-in-out;
         }
+        #app-container {
+            transition: background-color 0.5s ease-in-out, border-color 0.5s ease-in-out, box-shadow 0.5s ease-in-out;
+        }
+        .message {
+            transition: background-color 0.5s ease-in-out, color 0.5s ease-in-out;
+        }
+        #messageInput, #nicknameInput {
+            transition: background-color 0.5s ease-in-out, border-color 0.5s ease-in-out, color 0.5s ease-in-out;
+        }
+        .bg-gray-50, .bg-white, .border-gray-200, .border-gray-300 {
+            transition: background-color 0.5s ease-in-out, border-color 0.5s ease-in-out;
+        }
+        .text-gray-600, .text-gray-500, .text-gray-700, .text-blue-700, .text-blue-600, .text-gray-900 {
+            transition: color 0.5s ease-in-out;
+        }
+        /* ボタンのトランジション */
+        button {
+            transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+
+        /* ダークモードスタイル */
+        body.dark-mode {
+            background-color: #1a202c; /* ダークな背景 */
+            color: #e2e8f0; /* 明るい文字色 */
+        }
+        body.dark-mode #app-container {
+            background-color: #2d3748; /* ダークなコンテナ背景 */
+            border-color: #4a5568;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        body.dark-mode h1 {
+            color: #90cdf4; /* 明るい青 */
+        }
+        body.dark-mode p.text-gray-600 {
+            color: #cbd5e0; /* 明るいグレー */
+        }
+        body.dark-mode #messages {
+            background-color: #242d3b; /* ダークなメッセージエリア背景 */
+            border-color: #4a5568;
+        }
+        body.dark-mode .message {
+            background-color: #4a5568; /* ダークなメッセージ背景 */
+            color: #e2e8f0; /* 明るいメッセージ文字色 */
+        }
+        body.dark-mode .message .font-semibold {
+            color: #90cdf4; /* 明るい青 */
+        }
+        body.dark-mode .message .text-gray-900 {
+            color: #e2e8f0;
+        }
+        body.dark-mode .message .text-gray-500 {
+            color: #a0aec0;
+        }
+        body.dark-mode .message .text-gray-600 {
+            color: #a0aec0;
+        }
+        body.dark-mode #messageInput, body.dark-mode #nicknameInput {
+            background-color: #4a5568;
+            border-color: #6a7a8e;
+            color: #e2e8f0;
+        }
+        body.dark-mode #messageInput::placeholder, body.dark-mode #nicknameInput::placeholder {
+            color: #a0aec0;
+        }
+        body.dark-mode .border-gray-200, body.dark-mode .border-gray-300 {
+            border-color: #4a5568;
+        }
+        body.dark-mode .bg-gray-50 {
+            background-color: #2d3748;
+        }
+        body.dark-mode .text-gray-700 {
+            color: #e2e8f0;
+        }
+        body.dark-mode .text-gray-500 {
+            color: #a0aec0;
+        }
+        body.dark-mode .text-blue-600 {
+            color: #90cdf4;
+        }
+        body.dark-mode .mention-highlight {
+            background-color: #6b46c1; /* Darker purple for highlight */
+            color: #e2e8f0;
+        }
+        body.dark-mode .online-indicator {
+            background-color: #48bb78; /* Brighter green for dark mode */
+        }
+        body.dark-mode .offline-indicator {
+            background-color: #a0aec0; /* Lighter gray for dark mode */
+        }
+
+
         /* Custom scrollbar for messages div */
         #messages::-webkit-scrollbar {
             width: 8px;
@@ -27,12 +120,21 @@
             background: #f1f1f1;
             border-radius: 10px;
         }
+        body.dark-mode #messages::-webkit-scrollbar-track {
+            background: #2d3748;
+        }
         #messages::-webkit-scrollbar-thumb {
             background: #888;
             border-radius: 10px;
         }
+        body.dark-mode #messages::-webkit-scrollbar-thumb {
+            background: #a0aec0;
+        }
         #messages::-webkit-scrollbar-thumb:hover {
             background: #555;
+        }
+        body.dark-mode #messages::-webkit-scrollbar-thumb:hover {
+            background: #cbd5e0;
         }
 
         /* Fade-in animation for messages */
@@ -53,6 +155,11 @@
             border-radius: 4px;
             font-weight: bold;
         }
+        body.dark-mode .mention-highlight {
+            background-color: #6b46c1; /* Darker purple for dark mode */
+            color: #e2e8f0;
+        }
+
 
         /* Online indicator */
         .online-indicator {
@@ -86,12 +193,23 @@
             z-index: 10;
             box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
         }
+        body.dark-mode #mention-autocomplete {
+            background-color: #2d3748;
+            border-color: #4a5568;
+        }
         #mention-autocomplete div {
             padding: 8px 12px;
             cursor: pointer;
+            color: #333; /* Light mode text */
+        }
+        body.dark-mode #mention-autocomplete div {
+            color: #e2e8f0; /* Dark mode text */
         }
         #mention-autocomplete div:hover {
             background-color: #f0f0f0;
+        }
+        body.dark-mode #mention-autocomplete div:hover {
+            background-color: #4a5568;
         }
     </style>
 </head>
@@ -144,6 +262,9 @@
                 <button id="toggleNotificationBtn" class="px-4 py-2 bg-purple-500 text-white font-semibold rounded-md hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-colors duration-200 shadow-md text-sm">
                     通知ON
                 </button>
+                <button id="toggleDarkModeBtn" class="px-4 py-2 bg-gray-700 text-white font-semibold rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-600 transition-colors duration-200 shadow-md text-sm">
+                    ダークモード
+                </button>
                 <button id="helpBtn" class="px-4 py-2 bg-gray-500 text-white font-semibold rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors duration-200 shadow-md text-sm">
                     ヘルプ
                 </button>
@@ -164,7 +285,7 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, getDocs, writeBatch, doc, setDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
 
         // Firebase 設定 - ユーザーから提供された設定を使用
@@ -180,8 +301,6 @@
 
         // アプリケーションID (Canvas環境から提供されるグローバル変数)
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        // Firebase初期化トークン (Canvas環境から提供されるグローバル変数)
-        // const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; // 削除
 
         // Firebase 初期化
         const app = initializeApp(firebaseConfig);
@@ -202,6 +321,7 @@
         const currentNicknameDisplay = document.querySelector('#currentNicknameDisplay span');
         const onlineUsersList = document.getElementById('onlineUsersList');
         const toggleNotificationBtn = document.getElementById('toggleNotificationBtn');
+        const toggleDarkModeBtn = document.getElementById('toggleDarkModeBtn'); // ダークモードボタン
         const helpBtn = document.getElementById('helpBtn');
         const mentionAutocomplete = document.getElementById('mention-autocomplete');
 
@@ -212,8 +332,18 @@
         let userNickname = localStorage.getItem('userNickname');
         let currentUserId = null;
         let notificationEnabled = localStorage.getItem('notificationEnabled') === 'true';
-        let onlineUsers = {};
+        let darkModeEnabled = localStorage.getItem('darkModeEnabled') === 'true'; // ダークモード設定をローカルストレージから取得
+        let onlineUsers = {}; // { userId: nickname }
         let allKnownNicknames = new Set();
+
+        // --- ダークモードの初期設定 ---
+        if (darkModeEnabled) {
+            document.body.classList.add('dark-mode');
+            toggleDarkModeBtn.textContent = 'ライトモード';
+        } else {
+            document.body.classList.remove('dark-mode');
+            toggleDarkModeBtn.textContent = 'ダークモード';
+        }
 
         // --- ニックネーム関連 ---
         const generateAnonymousNickname = () => {
@@ -403,6 +533,7 @@
                             userSpan.innerHTML = `${userData.nickname} <span class="online-indicator"></span>`;
                             onlineUsersList.appendChild(userSpan);
                             hasOnlineUsers = true;
+                            allKnownNicknames.add(userData.nickname);
                         }
                     });
 
@@ -418,11 +549,10 @@
                 loadingIndicator.style.display = 'block';
                 console.log("認証試行中...");
                 try {
-                    // 匿名認証を試みる (「だれでもでいいぞ」の要件に合致)
                     await signInAnonymously(auth);
                     console.log("匿名認証を試みました。");
                 } catch (error) {
-                    console.error("認証に失敗しました:", error); // エラーメッセージをより汎用的に
+                    console.error("認証に失敗しました:", error);
                     displayMessageBox("認証に失敗しました。アプリをリロードしてください。", "エラー", "red");
                     loadingIndicator.style.display = 'none';
                 }
@@ -538,6 +668,20 @@
             }
         });
 
+        // --- ダークモード切り替え機能 ---
+        toggleDarkModeBtn.addEventListener('click', () => {
+            darkModeEnabled = !darkModeEnabled;
+            localStorage.setItem('darkModeEnabled', darkModeEnabled.toString());
+            if (darkModeEnabled) {
+                document.body.classList.add('dark-mode');
+                toggleDarkModeBtn.textContent = 'ライトモード';
+            } else {
+                document.body.classList.remove('dark-mode');
+                toggleDarkModeBtn.textContent = 'ダークモード';
+            }
+        });
+
+        // --- ヘルプ機能 ---
         helpBtn.addEventListener('click', () => {
             const helpMessage = `
                 <p class="mb-2">このアプリは、学習メモ共有ツールとして設計されています。</p>
@@ -556,6 +700,7 @@
             displayMessageBox(helpMessage, "使い方（ヘルプ）", "blue");
         });
 
+        // --- その他のイベントリスナー ---
         messageInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 sendMessageBtn.click();
@@ -648,7 +793,6 @@
 
             document.getElementById('confirm-box-ok-btn').addEventListener('click', () => {
                 box.remove();
-                callback(true);
             });
 
             document.getElementById('confirm-box-cancel-btn').addEventListener('click', () => {
