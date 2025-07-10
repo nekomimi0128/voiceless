@@ -788,16 +788,25 @@
             const text = messageInput.value;
             const lastAtIndex = text.lastIndexOf('@');
 
+            console.log("--- メンションオートコンプリートデバッグ ---");
+            console.log("Current messageInput value:", text);
+            console.log("Last '@' index:", lastAtIndex);
+
             if (lastAtIndex !== -1 && text.substring(lastAtIndex).includes(' ')) {
+                console.log("Space detected after @, hiding autocomplete.");
                 mentionAutocomplete.classList.add('hidden');
                 return;
             }
 
             if (lastAtIndex !== -1) {
                 const searchTerm = text.substring(lastAtIndex + 1);
+                console.log("Search term for mention:", searchTerm);
+                console.log("All known nicknames (before filter):", Array.from(allKnownNicknames)); // allKnownNicknamesの内容を確認
+
                 const filteredNicknames = Array.from(allKnownNicknames).filter(nickname =>
                     nickname.toLowerCase().startsWith(searchTerm.toLowerCase()) && nickname !== userNickname
                 );
+                console.log("Filtered nicknames for autocomplete:", filteredNicknames); // フィルタリング結果を確認
 
                 mentionAutocomplete.innerHTML = '';
                 if (filteredNicknames.length > 0) {
@@ -818,6 +827,7 @@
             } else {
                 mentionAutocomplete.classList.add('hidden');
             }
+            console.log("--- デバッグ終了 ---");
         });
 
         document.addEventListener('click', (event) => {
