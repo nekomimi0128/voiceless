@@ -78,8 +78,7 @@
             <!-- チャットセクション -->
             <div id="chat-section" class="hidden flex flex-col max-h-[calc(100vh-150px)]">
                 <div class="text-center text-gray-600 text-md mb-4 p-2 bg-blue-50 rounded-xl">
-                    <p id="chat-intro-message">こんにちは。あなたの声がここに届くのを、静かに待っていました。―さあ、あなたの名前（ニックネームでも）を教えてください。何があったかも、教えていただけると嬉しいです。</p>
-<p>さあ、あなたの声を吐き出してください。</p>
+                    <p id="chat-intro-message">今、感じていることを教えてください。</p>
                 </div>
                 <div id="messages" class="flex-grow overflow-y-auto custom-scrollbar p-4 space-y-4 bg-gray-50 rounded-xl mb-4 border border-gray-200">
                     <!-- メッセージがここに表示されます -->
@@ -120,7 +119,7 @@
             </div>
 
             <!-- カスタムアラート/確認モーダル (index.html用) -->
-            <div id="custom-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
+            <div id="custom-modal" class="fixed inset-0 bg-gray-600 bg-opacity50 flex items-center justify-center hidden z-50">
                 <div class="bg-white rounded-2xl p-8 shadow-xl max-w-sm w-full border border-gray-200 text-center">
                     <p id="modal-message" class="text-gray-700 text-lg mb-6"></p>
                     <div id="modal-buttons" class="flex justify-center space-x-4">
@@ -553,7 +552,7 @@
                     const updatedMessages = [...(chatData.messages || []), {
                         sender: 'user',
                         text: text,
-                        timestamp: serverTimestamp(),
+                        timestamp: new Date().toISOString(), // ★修正: serverTimestamp() から ISO 文字列に変更
                         readByCounselor: false, // Counselor has not read it yet
                         readByUser: true // User read it themselves
                     }];
@@ -586,21 +585,28 @@
 
         /**
          * Formats a timestamp.
-         * @param {Object} timestamp - Firebase Timestamp object
+         * @param {Object} timestamp - Firebase Timestamp object or ISO string
          * @returns {string} Formatted date and time
          */
         function formatTimestamp(timestamp) {
-            if (timestamp && timestamp.toDate) {
-                const date = timestamp.toDate();
-                return date.toLocaleString('ja-JP', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
+            let date;
+            if (timestamp && typeof timestamp.toDate === 'function') {
+                // Firebase Timestamp object
+                date = timestamp.toDate();
+            } else if (typeof timestamp === 'string') {
+                // ISO string
+                date = new Date(timestamp);
+            } else {
+                return '';
             }
-            return '';
+
+            return date.toLocaleString('ja-JP', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
         }
     </script>
 </body>
