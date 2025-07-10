@@ -82,7 +82,7 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <!-- Chat list -->
-                    <div class="col-span-1 bg-gray-50 rounded-xl p-4 shadow-inner border border-gray-200 max-h-[calc(100vh-250px)] overflow-y-auto custom-scrollbar"> <!-- ★修正 -->
+                    <div class="col-span-1 bg-gray-50 rounded-xl p-4 shadow-inner border border-gray-200 max-h-[calc(100vh-250px)] overflow-y-auto custom-scrollbar">
                         <h2 id="chat-list-title" class="text-xl font-semibold text-gray-800 mb-4">対応待ちチャット</h2>
                         <ul id="chat-list" class="space-y-3">
                             <!-- Chat sessions will be displayed here -->
@@ -91,7 +91,7 @@
                     </div>
 
                     <!-- Chat details and input area -->
-                    <div class="col-span-2 flex flex-col bg-gray-50 rounded-xl p-4 shadow-inner border border-gray-200 max-h-[calc(100vh-250px)]"> <!-- ★修正 -->
+                    <div class="col-span-2 flex flex-col bg-gray-50 rounded-xl p-4 shadow-inner border border-gray-200 max-h-[calc(100vh-250px)]">
                         <div id="selected-chat-info" class="text-center text-gray-600 text-md mb-4 p-2 bg-blue-50 rounded-xl hidden">
                             <p>ユーザーID: <span id="current-user-id"></span></p>
                         </div>
@@ -381,7 +381,7 @@
                         listItem.classList.add('bg-white');
                     }
 
-                    const lastMessageTime = chat.lastMessageAt && (chat.lastMessageAt instanceof Date || chat.lastMessageAt.toDate) ? formatTimestamp(chat.lastMessageAt) : 'N/A';
+                    const lastMessageTime = chat.lastMessageAt && (chat.lastMessageAt instanceof Date || chat.lastMessageAt.toDate || typeof chat.lastMessageAt === 'string') ? formatTimestamp(chat.lastMessageAt) : 'N/A';
                     listItem.innerHTML = `
                         <div class="flex-grow min-w-0 overflow-hidden">
                             <p class="font-semibold text-gray-800 truncate">ユーザーID: ${escapeHTML(chat.userId)}</p>
@@ -691,7 +691,9 @@
          */
         async function sendMessage() {
             const text = messageInput.value.trim();
+            console.log("sendMessage called. Text:", text, "currentSelectedChatId:", currentSelectedChatId, "counselorId:", counselorId); // Debug log
             if (text === '' || !currentSelectedChatId || !counselorId) {
+                console.warn("Message not sent: Missing text, chat ID, or counselor ID."); // Debug log
                 return;
             }
 
@@ -707,25 +709,29 @@
                 const chatDocSnap = await getDoc(chatDocRef);
                 if (chatDocSnap.exists()) {
                     const chatData = chatDocSnap.data();
+                    console.log("Current chat data before update:", chatData); // Debug log
+
                     const updatedMessages = [...(chatData.messages || []), {
                         sender: 'counselor', // Message from counselor
                         text: text,
-                        timestamp: serverTimestamp(),
+                        timestamp: new Date().toISOString(), // ★修正: serverTimestamp() から ISO 文字列に変更
                         readByCounselor: true, // Counselor read it
                         readByUser: false // User has not read it yet
                     }];
+                    console.log("Messages to be updated:", updatedMessages); // Debug log
 
                     await updateDoc(chatDocRef, {
                         messages: updatedMessages,
                         lastMessageAt: serverTimestamp()
                     });
                     messageInput.value = ''; // Clear input field
+                    console.log("Message sent successfully."); // Debug log
                 } else {
-                    console.error('Chat document not found.');
+                    console.error('Chat document not found for sending message.'); // Debug log
                     showCustomModal('チャットセッションが見つかりません。');
                 }
             } catch (error) {
-                console.error('Error sending message:', error);
+                console.error('Error sending message:', error); // Debug log
                 showCustomModal('メッセージの送信に失敗しました。');
             }
         }
@@ -766,21 +772,28 @@
 
         /**
          * Formats a timestamp.
-         * @param {Object} timestamp - Firebase Timestamp object
+         * @param {Object} timestamp - Firebase Timestamp object or ISO string
          * @returns {string} Formatted date and time
          */
         function formatTimestamp(timestamp) {
-            if (timestamp && timestamp.toDate) {
-                const date = timestamp.toDate();
-                return date.toLocaleString('ja-JP', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
+            let date;
+            if (timestamp && typeof timestamp.toDate === 'function') {
+                // Firebase Timestamp object
+                date = timestamp.toDate();
+            } else if (typeof timestamp === 'string') {
+                // ISO string
+                date = new Date(timestamp);
+            } else {
+                return '';
             }
-            return '';
+
+            return date.toLocaleString('ja-JP', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
         }
     </script>
 </body>
